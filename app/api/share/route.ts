@@ -16,18 +16,8 @@ import {
 import { REDIS_KEYS } from "@/lib/constants";
 
 export const POST = createAdminRoute(
-  async ({ request, session }) => {
+  async ({ body, session }) => {
     try {
-      const parsedBody = shareCreateRequestSchema.safeParse(
-        await request.json(),
-      );
-      if (!parsedBody.success) {
-        return NextResponse.json(
-          { error: "Parameter yang diperlukan tidak lengkap." },
-          { status: 400 },
-        );
-      }
-
       const {
         path,
         itemName,
@@ -38,7 +28,7 @@ export const POST = createAdminRoute(
         preventDownload,
         hasWatermark,
         watermarkText,
-      }: ShareCreateRequest = parsedBody.data;
+      }: ShareCreateRequest = body;
       const isCollection = items && items.length > 0;
 
       const validExpireFormats = /^\d+[smhdw]$/;
@@ -155,5 +145,5 @@ export const POST = createAdminRoute(
       );
     }
   },
-  { requireEmail: true },
+  { requireEmail: true, bodySchema: shareCreateRequestSchema },
 );

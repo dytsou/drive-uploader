@@ -11,65 +11,58 @@ const updateSchema = z.object({
   newContent: z.string(),
 });
 
-export const POST = createAdminRoute(async ({ request }) => {
-  try {
-    const body = await request.json();
-    const validation = updateSchema.safeParse(body);
+export const POST = createAdminRoute(
+  async ({ body }) => {
+    try {
+      const { fileId, newContent } = body;
+      const fileDetails = await getFileDetailsFromDrive(fileId);
 
-    if (!validation.success) {
+      if (
+        !fileDetails ||
+        !fileDetails.parents ||
+        fileDetails.parents.length === 0
+      ) {
+        throw new Error(
+          "Tidak dapat menemukan file atau informasi folder induk.",
+        );
+      }
+      const parentId = fileDetails.parents[0];
+
+      const accessToken = await getAccessToken();
+      const uploadUrl = `https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`;
+
+      const response = await fetch(uploadUrl, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": fileDetails.mimeType,
+        },
+        body: newContent,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(
+          `Google Drive API Error: ${
+            errorData.error?.message || "Gagal menyimpan perubahan."
+          }`,
+        );
+      }
+
+      await invalidateFolderCache(parentId);
+      const updatedFile = await response.json();
+      return NextResponse.json({ success: true, file: updatedFile });
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Terjadi kesalahan tidak dikenal.";
+      console.error("Update API Error:", errorMessage);
       return NextResponse.json(
-        { error: "Input tidak valid", details: validation.error.issues },
-        { status: 400 },
+        { error: "Internal Server Error.", details: errorMessage },
+        { status: 500 },
       );
     }
-
-    const { fileId, newContent } = validation.data;
-    const fileDetails = await getFileDetailsFromDrive(fileId);
-
-    if (
-      !fileDetails ||
-      !fileDetails.parents ||
-      fileDetails.parents.length === 0
-    ) {
-      throw new Error(
-        "Tidak dapat menemukan file atau informasi folder induk.",
-      );
-    }
-    const parentId = fileDetails.parents[0];
-
-    const accessToken = await getAccessToken();
-    const uploadUrl = `https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`;
-
-    const response = await fetch(uploadUrl, {
-      method: "PATCH",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "Content-Type": fileDetails.mimeType,
-      },
-      body: newContent,
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(
-        `Google Drive API Error: ${
-          errorData.error?.message || "Gagal menyimpan perubahan."
-        }`,
-      );
-    }
-
-    await invalidateFolderCache(parentId);
-    const updatedFile = await response.json();
-    return NextResponse.json({ success: true, file: updatedFile });
-  } catch (error: unknown) {
-    const errorMessage =
-      error instanceof Error
-        ? error.message
-        : "Terjadi kesalahan tidak dikenal.";
-    console.error("Update API Error:", errorMessage);
-    return NextResponse.json(
-      { error: "Internal Server Error.", details: errorMessage },
-      { status: 500 },
-    );
-  }
-});
+  },
+  { bodySchema: updateSchema },
+);

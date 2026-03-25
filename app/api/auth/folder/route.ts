@@ -7,9 +7,16 @@ import { createPublicRoute } from "@/lib/api-middleware";
 import { getProtectedFolderCredentials } from "@/lib/auth";
 import { checkRateLimit } from "@/lib/ratelimit";
 import bcrypt from "bcryptjs";
+import { z } from "zod";
+
+const folderAuthSchema = z.object({
+  folderId: z.string().min(1),
+  id: z.string().min(1),
+  password: z.string().min(1),
+});
 
 export const POST = createPublicRoute(
-  async ({ request }) => {
+  async ({ request, body }) => {
     const { success } = await checkRateLimit(request, "AUTH");
     if (!success) {
       return NextResponse.json(
@@ -19,13 +26,7 @@ export const POST = createPublicRoute(
     }
 
     try {
-      const { folderId, id, password } = await request.json();
-      if (!folderId || !id || !password) {
-        return NextResponse.json(
-          { error: "Folder ID, ID, and password are required." },
-          { status: 400 },
-        );
-      }
+      const { folderId, id, password } = body;
 
       const folderConfig = await getProtectedFolderCredentials(folderId);
       if (!folderConfig) {
@@ -71,5 +72,5 @@ export const POST = createPublicRoute(
       );
     }
   },
-  { rateLimit: false },
+  { rateLimit: false, bodySchema: folderAuthSchema },
 );

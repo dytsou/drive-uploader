@@ -6,9 +6,18 @@ import path from "path";
 import { createPublicRoute } from "@/lib/api-middleware";
 import { invalidateAccessToken } from "@/lib/drive";
 import { isAppConfigured } from "@/lib/config";
+import { z } from "zod";
+
+const setupFinishSchema = z.object({
+  clientId: z.string().min(1),
+  clientSecret: z.string().min(1),
+  authCode: z.string().min(1),
+  redirectUri: z.string().url(),
+  rootFolderId: z.string().min(1),
+});
 
 export const POST = createPublicRoute(
-  async ({ request }) => {
+  async ({ body }) => {
     try {
       const isConfigured = await isAppConfigured();
       if (isConfigured) {
@@ -22,7 +31,7 @@ export const POST = createPublicRoute(
       }
 
       const { clientId, clientSecret, authCode, redirectUri, rootFolderId } =
-        await request.json();
+        body;
 
       const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
         method: "POST",
@@ -120,5 +129,5 @@ export const POST = createPublicRoute(
       return NextResponse.json({ error: errorMessage }, { status: 500 });
     }
   },
-  { rateLimit: false },
+  { rateLimit: false, bodySchema: setupFinishSchema },
 );

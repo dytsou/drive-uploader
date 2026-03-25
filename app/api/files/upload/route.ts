@@ -1,28 +1,57 @@
 export const dynamic = "force-dynamic";
 
-import { NextResponse, NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 import { getAccessToken } from "@/lib/drive";
-import { withEditorSession } from "@/lib/api-middleware";
+import { createEditorRoute } from "@/lib/api-middleware";
 import { logActivity } from "@/lib/activityLogger";
-import { type Session } from "next-auth";
 import { invalidateFolderCache } from "@/lib/cache";
+import { z } from "zod";
 
 export const maxDuration = 60;
 
-export const POST = withEditorSession(
-  async (
-    request: NextRequest,
-    _context: { params?: unknown },
-    session: Session,
-  ) => {
-    const searchParams = request.nextUrl.searchParams;
-    const uploadType = searchParams.get("type");
+const uploadInitBodySchema = z.object({
+  name: z.string().min(1),
+  mimeType: z.string().min(1),
+  parentId: z.string().min(1),
+  size: z.number().nonnegative(),
+});
+
+const uploadQuerySchema = z
+  .object({
+    type: z.enum(["init", "chunk"]),
+    uploadUrl: z.string().url().optional(),
+    parentId: z.string().optional(),
+  })
+  .superRefine((value, ctx) => {
+    if (value.type === "chunk" && !value.uploadUrl) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["uploadUrl"],
+        message: "uploadUrl wajib diisi untuk chunk upload.",
+      });
+    }
+  });
+
+export const POST = createEditorRoute(
+  async ({ request, session, query }) => {
+    const uploadType = query.type;
 
     try {
       const accessToken = await getAccessToken();
 
       if (uploadType === "init") {
-        const { name, mimeType, parentId, size } = await request.json();
+        const parsedBody = uploadInitBodySchema.safeParse(await request.json());
+        if (!parsedBody.success) {
+          return NextResponse.json(
+            {
+              error: "Input upload init tidak valid.",
+              details: parsedBody.error.issues,
+            },
+            { status: 400 },
+          );
+        }
+
+        const { name, mimeType, parentId, size } = parsedBody.data;
 
         const metadata = {
           name,
@@ -53,13 +82,12 @@ export const POST = withEditorSession(
         const uploadUrl = response.headers.get("Location");
         return NextResponse.json({ uploadUrl });
       } else if (uploadType === "chunk") {
-        const uploadUrl = searchParams.get("uploadUrl");
-        const parentId = searchParams.get("parentId");
+        const uploadUrl = query.uploadUrl!;
+        const parentId = query.parentId;
         const contentRange = request.headers.get("Content-Range");
         const contentLength = request.headers.get("Content-Length");
 
         if (
-          !uploadUrl ||
           !uploadUrl.startsWith("https://www.googleapis.com/") ||
           !contentRange
         ) {
@@ -127,4 +155,5 @@ export const POST = withEditorSession(
       );
     }
   },
+  { querySchema: uploadQuerySchema },
 );

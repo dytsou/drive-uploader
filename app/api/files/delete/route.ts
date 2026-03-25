@@ -1,36 +1,21 @@
 export const dynamic = "force-dynamic";
 
-import { NextResponse, NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 import { getAccessToken, getFileDetailsFromDrive } from "@/lib/drive";
-import { type Session } from "next-auth";
 import { z } from "zod";
 import { logActivity } from "@/lib/activityLogger";
 import { invalidateFolderCache } from "@/lib/cache";
-import { withAdminSession } from "@/lib/api-middleware";
+import { createAdminRoute } from "@/lib/api-middleware";
 
 const deleteSchema = z.object({
   fileId: z.string().min(1),
 });
 
-export const POST = withAdminSession(
-  async (
-    request: NextRequest,
-    context: Record<string, unknown>,
-    session: Session,
-  ) => {
+export const POST = createAdminRoute(
+  async ({ body, session }) => {
     let fileDetails: { name?: string; parents?: string[] } | null = null;
     try {
-      const body = await request.json();
-      const validation = deleteSchema.safeParse(body);
-
-      if (!validation.success) {
-        return NextResponse.json(
-          { error: "Input tidak valid", details: validation.error.issues },
-          { status: 400 },
-        );
-      }
-
-      const { fileId } = validation.data;
+      const { fileId } = body;
 
       fileDetails = await getFileDetailsFromDrive(fileId);
       if (
@@ -93,4 +78,5 @@ export const POST = withAdminSession(
       );
     }
   },
+  { bodySchema: deleteSchema },
 );

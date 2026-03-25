@@ -15,9 +15,73 @@ const {
 
 vi.mock("@/lib/api-middleware", () => ({
   createPublicRoute: (
-    handler: (context: { request: NextRequest }) => Promise<Response>,
+    handler: (context: {
+      request: NextRequest;
+      body: unknown;
+      query: unknown;
+      params: Record<string, string>;
+      session: null;
+      requestId: string;
+    }) => Promise<Response>,
+    options?: {
+      bodySchema?: {
+        safeParse: (value: unknown) => {
+          success: boolean;
+          data?: unknown;
+          error?: { issues: unknown[] };
+        };
+      };
+      querySchema?: {
+        safeParse: (value: unknown) => {
+          success: boolean;
+          data?: unknown;
+          error?: { issues: unknown[] };
+        };
+      };
+    },
   ) => {
-    return async (request: NextRequest) => handler({ request });
+    return async (request: NextRequest) => {
+      let body: unknown;
+      if (options?.bodySchema) {
+        const rawBody = await request.json();
+        const parsedBody = options.bodySchema.safeParse(rawBody);
+        if (!parsedBody.success) {
+          return Response.json(
+            {
+              error: "Input tidak valid.",
+              details: parsedBody.error?.issues ?? [],
+            },
+            { status: 400 },
+          );
+        }
+        body = parsedBody.data;
+      }
+
+      let query: unknown;
+      if (options?.querySchema) {
+        const rawQuery = Object.fromEntries(request.nextUrl.searchParams);
+        const parsedQuery = options.querySchema.safeParse(rawQuery);
+        if (!parsedQuery.success) {
+          return Response.json(
+            {
+              error: "Parameter query tidak valid.",
+              details: parsedQuery.error?.issues ?? [],
+            },
+            { status: 400 },
+          );
+        }
+        query = parsedQuery.data;
+      }
+
+      return handler({
+        request,
+        session: null,
+        body,
+        query,
+        params: {},
+        requestId: "test-request-id",
+      });
+    };
   },
 }));
 
@@ -97,9 +161,8 @@ describe("app/api/auth/folder POST", () => {
     const response = await POST(createPostRequest({ folderId: "folder-1" }));
 
     expect(response.status).toBe(400);
-    await expect(response.json()).resolves.toEqual({
-      error: "Folder ID, ID, and password are required.",
-    });
+    const payload = await response.json();
+    expect(payload.error).toBe("Input tidak valid.");
   });
 
   it("returns 404 when the folder is not configured", async () => {

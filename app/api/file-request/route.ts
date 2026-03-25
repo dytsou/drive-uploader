@@ -11,41 +11,39 @@ import {
   serializeFileRequestLink,
 } from "@/lib/link-payloads";
 
-export const POST = createAdminRoute(async ({ request, session }) => {
-  try {
-    const parsedBody = fileRequestCreateSchema.safeParse(await request.json());
-    if (!parsedBody.success) {
-      return NextResponse.json({ error: "Invalid input" }, { status: 400 });
+export const POST = createAdminRoute(
+  async ({ body, session }) => {
+    try {
+      const { folderId, folderName, title, expiresIn } = body;
+      const token = crypto.randomBytes(16).toString("hex");
+      const expiresAt = Date.now() + expiresIn * 60 * 60 * 1000;
+
+      const requestData = serializeFileRequestLink({
+        token,
+        folderId,
+        folderName,
+        title,
+        createdAt: Date.now(),
+        expiresAt,
+        createdBy: session.user.email ?? undefined,
+        type: "file-request",
+      });
+
+      await kv.hset(REDIS_KEYS.FILE_REQUESTS, { [token]: requestData });
+
+      const publicUrl = `${getBaseUrl()}/request/${token}`;
+
+      return NextResponse.json({ success: true, token, publicUrl });
+    } catch (error) {
+      console.error("Create File Request Error:", error);
+      return NextResponse.json(
+        { error: "Internal Server Error" },
+        { status: 500 },
+      );
     }
-
-    const { folderId, folderName, title, expiresIn } = parsedBody.data;
-    const token = crypto.randomBytes(16).toString("hex");
-    const expiresAt = Date.now() + expiresIn * 60 * 60 * 1000;
-
-    const requestData = serializeFileRequestLink({
-      token,
-      folderId,
-      folderName,
-      title,
-      createdAt: Date.now(),
-      expiresAt,
-      createdBy: session.user.email ?? undefined,
-      type: "file-request",
-    });
-
-    await kv.hset(REDIS_KEYS.FILE_REQUESTS, { [token]: requestData });
-
-    const publicUrl = `${getBaseUrl()}/request/${token}`;
-
-    return NextResponse.json({ success: true, token, publicUrl });
-  } catch (error) {
-    console.error("Create File Request Error:", error);
-    return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 },
-    );
-  }
-});
+  },
+  { bodySchema: fileRequestCreateSchema },
+);
 
 export const dynamic = "force-dynamic";
 
@@ -73,21 +71,18 @@ export const GET = createAdminRoute(async () => {
   }
 });
 
-export const DELETE = createAdminRoute(async ({ request }) => {
-  try {
-    const parsedBody = fileRequestDeleteSchema.safeParse(await request.json());
-    if (!parsedBody.success) {
-      return NextResponse.json({ error: "Token required" }, { status: 400 });
+export const DELETE = createAdminRoute(
+  async ({ body }) => {
+    try {
+      await kv.hdel(REDIS_KEYS.FILE_REQUESTS, body.token);
+      return NextResponse.json({ success: true });
+    } catch (error) {
+      console.error("Delete File Request Error:", error);
+      return NextResponse.json(
+        { error: "Internal Server Error" },
+        { status: 500 },
+      );
     }
-
-    await kv.hdel(REDIS_KEYS.FILE_REQUESTS, parsedBody.data.token);
-
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error("Delete File Request Error:", error);
-    return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 },
-    );
-  }
-});
+  },
+  { bodySchema: fileRequestDeleteSchema },
+);

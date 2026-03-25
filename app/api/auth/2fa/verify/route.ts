@@ -5,9 +5,14 @@ import { createUserRoute } from "@/lib/api-middleware";
 import { authenticator } from "otplib";
 import { kv } from "@/lib/kv";
 import { checkRateLimit } from "@/lib/ratelimit";
+import { z } from "zod";
+
+const verifyTwoFactorSchema = z.object({
+  token: z.string().min(1, "Kode verifikasi tidak valid."),
+});
 
 export const POST = createUserRoute(
-  async ({ request, session }) => {
+  async ({ request, session, body }) => {
     const { success } = await checkRateLimit(request, "AUTH");
     if (!success) {
       return NextResponse.json(
@@ -17,7 +22,7 @@ export const POST = createUserRoute(
     }
 
     try {
-      const { token } = await request.json();
+      const { token } = body;
       const userEmail = session.user.email;
 
       const secret: string | null = await kv.get(
@@ -54,5 +59,5 @@ export const POST = createUserRoute(
       );
     }
   },
-  { requireEmail: true, rateLimit: false },
+  { requireEmail: true, rateLimit: false, bodySchema: verifyTwoFactorSchema },
 );

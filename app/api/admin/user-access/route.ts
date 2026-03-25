@@ -34,66 +34,52 @@ export const GET = createAdminRoute(async () => {
   }
 });
 
-export const POST = createAdminRoute(async ({ request }) => {
-  try {
-    const body = await request.json();
-    const validation = accessSchema.safeParse(body);
+export const POST = createAdminRoute(
+  async ({ body }) => {
+    try {
+      const { folderId, email } = body;
 
-    if (!validation.success) {
+      await kv.sadd(FOLDERS_WITH_ACCESS_KEY, folderId);
+      await kv.sadd(getFolderAccessKey(folderId), email);
+
+      return NextResponse.json({
+        success: true,
+        message: `Akses untuk ${email} ke folder ${folderId} telah ditambahkan.`,
+      });
+    } catch (error) {
+      console.error("Gagal menambah akses pengguna:", error);
       return NextResponse.json(
-        { error: validation.error.issues[0].message },
-        { status: 400 },
+        { error: "Gagal memproses permintaan." },
+        { status: 500 },
       );
     }
+  },
+  { bodySchema: accessSchema },
+);
 
-    const { folderId, email } = validation.data;
+export const DELETE = createAdminRoute(
+  async ({ body }) => {
+    try {
+      const { folderId, email } = body;
 
-    await kv.sadd(FOLDERS_WITH_ACCESS_KEY, folderId);
-    await kv.sadd(getFolderAccessKey(folderId), email);
+      await kv.srem(getFolderAccessKey(folderId), email);
 
-    return NextResponse.json({
-      success: true,
-      message: `Akses untuk ${email} ke folder ${folderId} telah ditambahkan.`,
-    });
-  } catch (error) {
-    console.error("Gagal menambah akses pengguna:", error);
-    return NextResponse.json(
-      { error: "Gagal memproses permintaan." },
-      { status: 500 },
-    );
-  }
-});
+      const remainingEmails = await kv.scard(getFolderAccessKey(folderId));
+      if (remainingEmails === 0) {
+        await kv.srem(FOLDERS_WITH_ACCESS_KEY, folderId);
+      }
 
-export const DELETE = createAdminRoute(async ({ request }) => {
-  try {
-    const body = await request.json();
-    const validation = accessSchema.safeParse(body);
-
-    if (!validation.success) {
+      return NextResponse.json({
+        success: true,
+        message: `Akses untuk ${email} dari folder ${folderId} telah dihapus.`,
+      });
+    } catch (error) {
+      console.error("Gagal menghapus akses pengguna:", error);
       return NextResponse.json(
-        { error: validation.error.issues[0].message },
-        { status: 400 },
+        { error: "Gagal memproses permintaan." },
+        { status: 500 },
       );
     }
-
-    const { folderId, email } = validation.data;
-
-    await kv.srem(getFolderAccessKey(folderId), email);
-
-    const remainingEmails = await kv.scard(getFolderAccessKey(folderId));
-    if (remainingEmails === 0) {
-      await kv.srem(FOLDERS_WITH_ACCESS_KEY, folderId);
-    }
-
-    return NextResponse.json({
-      success: true,
-      message: `Akses untuk ${email} dari folder ${folderId} telah dihapus.`,
-    });
-  } catch (error) {
-    console.error("Gagal menghapus akses pengguna:", error);
-    return NextResponse.json(
-      { error: "Gagal memproses permintaan." },
-      { status: 500 },
-    );
-  }
-});
+  },
+  { bodySchema: accessSchema },
+);

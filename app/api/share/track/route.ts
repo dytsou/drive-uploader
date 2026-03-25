@@ -6,16 +6,9 @@ import { jwtVerify } from "jose";
 import { shareTokenRequestSchema } from "@/lib/link-payloads";
 
 export const POST = createPublicRoute(
-  async ({ request }) => {
+  async ({ body }) => {
     try {
-      const parsedBody = shareTokenRequestSchema.safeParse(
-        await request.json(),
-      );
-      if (!parsedBody.success) {
-        return new Response(null, { status: 204 });
-      }
-
-      const { shareToken } = parsedBody.data;
+      const { shareToken } = body;
 
       const secret = new TextEncoder().encode(process.env.SHARE_SECRET_KEY!);
       const { payload } = await jwtVerify(shareToken, secret);
@@ -37,5 +30,5 @@ export const POST = createPublicRoute(
       return new Response(null, { status: 204 });
     }
   },
-  { rateLimit: false },
+  { rateLimit: false, bodySchema: shareTokenRequestSchema },
 );

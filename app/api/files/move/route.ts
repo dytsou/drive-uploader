@@ -1,38 +1,21 @@
 export const dynamic = "force-dynamic";
 
-import { NextResponse, NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 import { getAccessToken } from "@/lib/drive";
 import { z } from "zod";
 import { invalidateFolderCache } from "@/lib/cache";
 import { logActivity } from "@/lib/activityLogger";
+import { createEditorRoute } from "@/lib/api-middleware";
 
 const moveSchema = z.object({
   fileId: z.string().min(1),
   currentParentId: z.string().min(1),
   newParentId: z.string().min(1),
 });
-
-import { withEditorSession } from "@/lib/api-middleware";
-import { type Session } from "next-auth";
-
-export const POST = withEditorSession(
-  async (
-    request: NextRequest,
-    _context: { params?: unknown },
-    session: Session,
-  ) => {
+export const POST = createEditorRoute(
+  async ({ body, session }) => {
     try {
-      const body = await request.json();
-      const validation = moveSchema.safeParse(body);
-
-      if (!validation.success) {
-        return NextResponse.json(
-          { error: "Input tidak valid", details: validation.error.issues },
-          { status: 400 },
-        );
-      }
-
-      const { fileId, currentParentId, newParentId } = validation.data;
+      const { fileId, currentParentId, newParentId } = body;
 
       if (currentParentId === newParentId) {
         return NextResponse.json({
@@ -86,4 +69,5 @@ export const POST = withEditorSession(
       );
     }
   },
+  { bodySchema: moveSchema },
 );

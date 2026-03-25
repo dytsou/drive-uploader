@@ -18,6 +18,13 @@ const folderSchema = z.object({
   password: z.string().min(1, "Password tidak boleh kosong."),
 });
 
+const folderDeleteSchema = z.object({
+  folderId: z
+    .string()
+    .min(1, "Folder ID diperlukan.")
+    .transform((v) => v.trim()),
+});
+
 export const dynamic = "force-dynamic";
 
 export const GET = createAdminRoute(async () => {
@@ -43,66 +50,64 @@ export const GET = createAdminRoute(async () => {
   }
 });
 
-export const POST = createAdminRoute(async ({ request }) => {
-  try {
-    const body = await request.json();
-    const validation = folderSchema.safeParse(body);
+export const POST = createAdminRoute(
+  async ({ body }) => {
+    try {
+      const validation = folderSchema.safeParse(body);
+      if (!validation.success) {
+        return NextResponse.json(
+          { error: validation.error.issues[0].message },
+          { status: 400 },
+        );
+      }
 
-    if (!validation.success) {
+      const { folderId, password } = validation.data;
+      const saltRounds = 10;
+      const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+      await db.protectedFolder.upsert({
+        where: { folderId },
+        update: { password: hashedPassword },
+        create: { folderId, password: hashedPassword },
+      });
+
+      return NextResponse.json({
+        success: true,
+        message: `Folder ${folderId} berhasil dilindungi.`,
+      });
+    } catch (error) {
+      console.error("Gagal menambah folder terproteksi:", error);
       return NextResponse.json(
-        { error: validation.error.issues[0].message },
-        { status: 400 },
+        { error: "Gagal memproses permintaan." },
+        { status: 500 },
       );
     }
+  },
+  { bodySchema: folderSchema },
+);
 
-    const { folderId, password } = validation.data;
-    const saltRounds = 10;
-    const hashedPassword = await bcrypt.hash(password, saltRounds);
+export const DELETE = createAdminRoute(
+  async ({ body }) => {
+    try {
+      const { folderId } = body;
 
-    await db.protectedFolder.upsert({
-      where: { folderId },
-      update: { password: hashedPassword },
-      create: { folderId, password: hashedPassword },
-    });
+      await db.protectedFolder
+        .delete({
+          where: { folderId },
+        })
+        .catch(() => {});
 
-    return NextResponse.json({
-      success: true,
-      message: `Folder ${folderId} berhasil dilindungi.`,
-    });
-  } catch (error) {
-    console.error("Gagal menambah folder terproteksi:", error);
-    return NextResponse.json(
-      { error: "Gagal memproses permintaan." },
-      { status: 500 },
-    );
-  }
-});
-
-export const DELETE = createAdminRoute(async ({ request }) => {
-  try {
-    const { folderId } = await request.json();
-    if (!folderId) {
+      return NextResponse.json({
+        success: true,
+        message: `Perlindungan untuk folder ${folderId} telah dihapus.`,
+      });
+    } catch (error) {
+      console.error("Gagal menghapus folder terproteksi:", error);
       return NextResponse.json(
-        { error: "Folder ID diperlukan." },
-        { status: 400 },
+        { error: "Gagal memproses permintaan." },
+        { status: 500 },
       );
     }
-
-    await db.protectedFolder
-      .delete({
-        where: { folderId: folderId.trim() },
-      })
-      .catch(() => {});
-
-    return NextResponse.json({
-      success: true,
-      message: `Perlindungan untuk folder ${folderId} telah dihapus.`,
-    });
-  } catch (error) {
-    console.error("Gagal menghapus folder terproteksi:", error);
-    return NextResponse.json(
-      { error: "Gagal memproses permintaan." },
-      { status: 500 },
-    );
-  }
-});
+  },
+  { bodySchema: folderDeleteSchema },
+);

@@ -1,10 +1,11 @@
 export const dynamic = "force-dynamic";
 
-import { NextResponse, NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 import { getAccessToken, getFileDetailsFromDrive } from "@/lib/drive";
 import { z } from "zod";
 import { invalidateFolderCache } from "@/lib/cache";
 import { logActivity } from "@/lib/activityLogger";
+import { createEditorRoute } from "@/lib/api-middleware";
 
 const sanitizeString = (str: string) => str.replace(/<[^>]*>?/gm, "");
 
@@ -15,28 +16,10 @@ const renameSchema = z.object({
     .min(1, { message: "Nama baru tidak boleh kosong." })
     .transform((val) => sanitizeString(val)),
 });
-
-import { withEditorSession } from "@/lib/api-middleware";
-import { type Session } from "next-auth";
-
-export const POST = withEditorSession(
-  async (
-    request: NextRequest,
-    _context: { params?: unknown },
-    session: Session,
-  ) => {
+export const POST = createEditorRoute(
+  async ({ body, session }) => {
     try {
-      const body = await request.json();
-      const validation = renameSchema.safeParse(body);
-
-      if (!validation.success) {
-        return NextResponse.json(
-          { error: "Input tidak valid", details: validation.error.issues },
-          { status: 400 },
-        );
-      }
-
-      const { fileId, newName } = validation.data;
+      const { fileId, newName } = body;
       const fileDetails = await getFileDetailsFromDrive(fileId);
 
       if (
@@ -94,4 +77,5 @@ export const POST = withEditorSession(
       );
     }
   },
+  { bodySchema: renameSchema },
 );

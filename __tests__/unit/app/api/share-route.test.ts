@@ -20,13 +20,70 @@ vi.mock("@/lib/api-middleware", () => ({
     handler: (context: {
       request: NextRequest;
       session: { user: { email: string; role: string } };
+      body: unknown;
+      query: unknown;
+      params: Record<string, string>;
+      requestId: string;
     }) => Promise<Response>,
+    options?: {
+      bodySchema?: {
+        safeParse: (value: unknown) => {
+          success: boolean;
+          data?: unknown;
+          error?: { issues: unknown[] };
+        };
+      };
+      querySchema?: {
+        safeParse: (value: unknown) => {
+          success: boolean;
+          data?: unknown;
+          error?: { issues: unknown[] };
+        };
+      };
+    },
   ) => {
-    return async (request: NextRequest) =>
-      handler({
+    return async (request: NextRequest) => {
+      let body: unknown;
+      if (options?.bodySchema) {
+        const rawBody = await request.json();
+        const parsedBody = options.bodySchema.safeParse(rawBody);
+        if (!parsedBody.success) {
+          return Response.json(
+            {
+              error: "Input tidak valid.",
+              details: parsedBody.error?.issues ?? [],
+            },
+            { status: 400 },
+          );
+        }
+        body = parsedBody.data;
+      }
+
+      let query: unknown;
+      if (options?.querySchema) {
+        const rawQuery = Object.fromEntries(request.nextUrl.searchParams);
+        const parsedQuery = options.querySchema.safeParse(rawQuery);
+        if (!parsedQuery.success) {
+          return Response.json(
+            {
+              error: "Parameter query tidak valid.",
+              details: parsedQuery.error?.issues ?? [],
+            },
+            { status: 400 },
+          );
+        }
+        query = parsedQuery.data;
+      }
+
+      return handler({
         request,
         session: { user: { email: "admin@example.com", role: "ADMIN" } },
+        body,
+        query,
+        params: {},
+        requestId: "test-request-id",
       });
+    };
   },
 }));
 
@@ -128,9 +185,8 @@ describe("app/api/share POST", () => {
     );
 
     expect(response.status).toBe(400);
-    await expect(response.json()).resolves.toEqual({
-      error: "Parameter yang diperlukan tidak lengkap.",
-    });
+    const payload = await response.json();
+    expect(payload.error).toBe("Input tidak valid.");
   });
 
   it("returns 400 for invalid expiration formats", async () => {

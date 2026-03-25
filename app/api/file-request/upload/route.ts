@@ -10,18 +10,30 @@ import {
   fileRequestUploadInitSchema,
   parseFileRequestLink,
 } from "@/lib/link-payloads";
+import { z } from "zod";
 
 export const maxDuration = 60;
 
-export const POST = createPublicRoute(
-  async ({ request }) => {
-    const searchParams = request.nextUrl.searchParams;
-    const uploadType = searchParams.get("type");
-    const token = searchParams.get("token");
-
-    if (!token) {
-      return NextResponse.json({ error: "Token required" }, { status: 401 });
+const fileRequestUploadQuerySchema = z
+  .object({
+    type: z.enum(["init", "chunk"]),
+    token: z.string().min(1),
+    uploadUrl: z.string().url().optional(),
+  })
+  .superRefine((value, ctx) => {
+    if (value.type === "chunk" && !value.uploadUrl) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["uploadUrl"],
+        message: "uploadUrl wajib diisi untuk chunk upload.",
+      });
     }
+  });
+
+export const POST = createPublicRoute(
+  async ({ request, query }) => {
+    const uploadType = query.type;
+    const token = query.token;
 
     const requestData = parseFileRequestLink(
       await kv.hget(REDIS_KEYS.FILE_REQUESTS, token),
@@ -75,10 +87,10 @@ export const POST = createPublicRoute(
         const uploadUrl = response.headers.get("Location");
         return NextResponse.json({ uploadUrl });
       } else if (uploadType === "chunk") {
-        const uploadUrl = searchParams.get("uploadUrl");
+        const uploadUrl = query.uploadUrl!;
         const contentRange = request.headers.get("Content-Range");
 
-        if (!uploadUrl || !contentRange) {
+        if (!contentRange) {
           return NextResponse.json(
             { error: "Missing params" },
             { status: 400 },
@@ -131,5 +143,5 @@ export const POST = createPublicRoute(
 
     return NextResponse.json({ error: "Invalid type" }, { status: 400 });
   },
-  { rateLimit: false },
+  { rateLimit: false, querySchema: fileRequestUploadQuerySchema },
 );

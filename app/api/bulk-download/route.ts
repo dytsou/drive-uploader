@@ -5,24 +5,19 @@ import { createPublicRoute } from "@/lib/api-middleware";
 import { getAccessToken } from "@/lib/drive";
 import JSZip from "jszip";
 import { isAccessRestricted } from "@/lib/securityUtils";
+import { z } from "zod";
+
+const bulkDownloadSchema = z.object({
+  fileIds: z
+    .array(z.string().min(1))
+    .min(1, "Parameter fileIds tidak valid.")
+    .max(20, "Maksimal 20 file per unduhan sekaligus."),
+});
 
 export const POST = createPublicRoute(
-  async ({ request, session }) => {
+  async ({ body, session }) => {
     try {
-      const { fileIds } = await request.json();
-      if (!fileIds || !Array.isArray(fileIds) || fileIds.length === 0) {
-        return NextResponse.json(
-          { error: "Parameter fileIds tidak valid." },
-          { status: 400 },
-        );
-      }
-
-      if (fileIds.length > 20) {
-        return NextResponse.json(
-          { error: "Maksimal 20 file per unduhan sekaligus." },
-          { status: 400 },
-        );
-      }
+      const { fileIds } = body;
 
       const accessToken = await getAccessToken();
       const zip = new JSZip();
@@ -77,5 +72,5 @@ export const POST = createPublicRoute(
       );
     }
   },
-  { includeSession: true, rateLimit: false },
+  { includeSession: true, rateLimit: false, bodySchema: bulkDownloadSchema },
 );

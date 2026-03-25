@@ -18,72 +18,68 @@ const createFolderSchema = z.object({
   parentId: z.string().min(1, { message: "Folder induk diperlukan." }),
 });
 
-export const POST = createAdminRoute(async ({ request, session }) => {
-  try {
-    const body = await request.json();
-    const validation = createFolderSchema.safeParse(body);
+export const POST = createAdminRoute(
+  async ({ body, session }) => {
+    try {
+      const { folderName, parentId } = body;
+      const accessToken = await getAccessToken();
 
-    if (!validation.success) {
-      return NextResponse.json(
-        { error: "Input tidak valid", details: validation.error.issues },
-        { status: 400 },
+      const fileMetadata = {
+        name: folderName,
+        mimeType: "application/vnd.google-apps.folder",
+        parents: [parentId],
+      };
+
+      const response = await fetch(
+        "https://www.googleapis.com/drive/v3/files",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(fileMetadata),
+        },
       );
-    }
 
-    const { folderName, parentId } = validation.data;
-    const accessToken = await getAccessToken();
+      const data = await response.json();
+      if (!response.ok) {
+        await logActivity("UPLOAD", {
+          itemName: folderName,
+          userEmail: session.user.email,
+          status: "failure",
+          error: data.error?.message || "Gagal membuat folder di Google Drive.",
+        });
+        throw new Error(
+          data.error?.message || "Gagal membuat folder di Google Drive.",
+        );
+      }
 
-    const fileMetadata = {
-      name: folderName,
-      mimeType: "application/vnd.google-apps.folder",
-      parents: [parentId],
-    };
+      await invalidateFolderCache(parentId);
 
-    const response = await fetch("https://www.googleapis.com/drive/v3/files", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(fileMetadata),
-    });
+      const rootFolderId = process.env.NEXT_PUBLIC_ROOT_FOLDER_ID;
+      if (rootFolderId) {
+        await kv.del(`zee-index:folder-tree:${rootFolderId}`);
+      }
 
-    const data = await response.json();
-    if (!response.ok) {
       await logActivity("UPLOAD", {
         itemName: folderName,
         userEmail: session.user.email,
-        status: "failure",
-        error: data.error?.message || "Gagal membuat folder di Google Drive.",
+        status: "success",
       });
-      throw new Error(
-        data.error?.message || "Gagal membuat folder di Google Drive.",
+
+      return NextResponse.json(data, { status: 200 });
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Terjadi kesalahan tidak dikenal.";
+      console.error("Create Folder API Error:", error);
+      return NextResponse.json(
+        { error: errorMessage || "Internal Server Error." },
+        { status: 500 },
       );
     }
-
-    await invalidateFolderCache(parentId);
-
-    const rootFolderId = process.env.NEXT_PUBLIC_ROOT_FOLDER_ID;
-    if (rootFolderId) {
-      await kv.del(`zee-index:folder-tree:${rootFolderId}`);
-    }
-
-    await logActivity("UPLOAD", {
-      itemName: folderName,
-      userEmail: session.user.email,
-      status: "success",
-    });
-
-    return NextResponse.json(data, { status: 200 });
-  } catch (error: unknown) {
-    const errorMessage =
-      error instanceof Error
-        ? error.message
-        : "Terjadi kesalahan tidak dikenal.";
-    console.error("Create Folder API Error:", error);
-    return NextResponse.json(
-      { error: errorMessage || "Internal Server Error." },
-      { status: 500 },
-    );
-  }
-});
+  },
+  { bodySchema: createFolderSchema },
+);

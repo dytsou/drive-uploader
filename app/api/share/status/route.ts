@@ -8,19 +8,9 @@ import { REDIS_KEYS } from "@/lib/constants";
 import { shareTokenRequestSchema } from "@/lib/link-payloads";
 
 export const POST = createPublicRoute(
-  async ({ request }) => {
+  async ({ body }) => {
     try {
-      const parsedBody = shareTokenRequestSchema.safeParse(
-        await request.json(),
-      );
-      if (!parsedBody.success) {
-        return NextResponse.json(
-          { valid: false, error: "Token not provided" },
-          { status: 400 },
-        );
-      }
-
-      const { shareToken } = parsedBody.data;
+      const { shareToken } = body;
 
       const secret = new TextEncoder().encode(process.env.SHARE_SECRET_KEY!);
       const { payload } = await jwtVerify(shareToken, secret);
@@ -45,5 +35,5 @@ export const POST = createPublicRoute(
       return NextResponse.json({ valid: false });
     }
   },
-  { rateLimit: false },
+  { rateLimit: false, bodySchema: shareTokenRequestSchema },
 );
