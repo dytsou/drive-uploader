@@ -195,7 +195,7 @@ const nextConfig = {
     ];
   },
 
-  webpack: (config, { isServer }) => {
+  webpack: (config) => {
     config.resolve.alias.canvas = false;
 
     config.ignoreWarnings = [
