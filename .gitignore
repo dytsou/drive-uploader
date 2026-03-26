@@ -93,4 +93,6 @@ public/swe-worker-*.js
 /prisma/dev.db
 /prisma/dev.db-journal
 /public/uploads/*
-!/public/uploads/.gitkeep
+
+# Local Storage Cloud
+/storage/
