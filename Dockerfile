@@ -1,7 +1,3 @@
-# ==============================================================================
-# ZEE-INDEX DOCKERFILE - PostgreSQL + Optimized Build
-# ==============================================================================
-
 # Stage 1: Base
 FROM node:20-alpine AS base
 RUN apk add --no-cache libc6-compat openssl
@@ -13,29 +9,33 @@ WORKDIR /app
 # Stage 2: Dependencies
 FROM base AS deps
 COPY pnpm-lock.yaml ./
-RUN pnpm fetch
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm fetch
 COPY package.json ./
-RUN pnpm install --offline --frozen-lockfile
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --offline --frozen-lockfile
 
 # Stage 3: Builder
 FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
+
+# Optimization: Copy prisma and package.json first to cache generation if schema hasn't changed
+COPY package.json ./
+COPY prisma ./prisma
+RUN pnpm prisma generate
+
+# Copy the rest of the application
 COPY . .
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV SKIP_ENV_VALIDATION=1
 
-# Generate Prisma Client
-RUN pnpm prisma generate
-
-# Build application
+# Build application with Next.js cache mount
 ARG NEXT_PUBLIC_ROOT_FOLDER_ID
 ARG NEXT_PUBLIC_ROOT_FOLDER_NAME
 ENV NEXT_PUBLIC_ROOT_FOLDER_ID=$NEXT_PUBLIC_ROOT_FOLDER_ID
 ENV NEXT_PUBLIC_ROOT_FOLDER_NAME=$NEXT_PUBLIC_ROOT_FOLDER_NAME
 
-RUN pnpm run build
+RUN --mount=type=cache,target=/app/.next/cache pnpm run build
 
 # Stage 4: Runner
 FROM node:20-alpine AS runner
@@ -49,14 +49,17 @@ RUN addgroup --system --gid 1001 nodejs && \
 
 RUN apk add --no-cache curl dumb-init openssl postgresql-client
 
-# Copy necessary files
+# Install prisma CLI specifically for migrations in entrypoint (much smaller than full node_modules)
+RUN npm install -g prisma@5.22.0
+
+# Copy necessary files from builder
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 
-# Copy node_modules (needed for Prisma CLI and client)
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules ./node_modules
+# Note: Standalone mode already includes necessary node_modules in .next/standalone/node_modules
+# We no longer need to copy the entire /app/node_modules from builder.
 
 # Script to run migrations and start
 RUN cat <<'ENTRY' > /app/entrypoint.sh
@@ -80,10 +83,13 @@ if [ -n "$DATABASE_URL" ]; then
   fi
 fi
 echo "Running database migrations..."
-if [ -d "prisma/migrations" ]; then npx prisma migrate deploy; else npx prisma db push --accept-data-loss; fi || echo "Prisma migration failed, continuing..."
+# Use global prisma installed earlier
+if [ -d "prisma/migrations" ]; then prisma migrate deploy; else prisma db push --accept-data-loss; fi || echo "Prisma migration failed, continuing..."
 exec "$@"
 ENTRY
-RUN chmod +x /app/entrypoint.sh
+RUN tr -d '\r' < /app/entrypoint.sh > /app/entrypoint.sh.fixed && \
+    mv /app/entrypoint.sh.fixed /app/entrypoint.sh && \
+    chmod +x /app/entrypoint.sh
 
 USER nextjs
 
@@ -95,4 +101,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD curl -f http://localhost:3000/api/health || exit 1
 
 ENTRYPOINT ["dumb-init", "--", "/app/entrypoint.sh"]
-CMD ["node", "server.js"]
+CMD ["node", "server.js"]
