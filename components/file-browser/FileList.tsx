@@ -109,9 +109,14 @@ export default function FileList({
     toggleFavorite(file.id, true);
   };
 
-  const uploadGhostFiles = useMemo(
-    () =>
-      Object.values(uploads).map(
+  const uploadGhostFiles = useMemo(() => {
+    const realFileNames = new Set(files.map((f) => f.name));
+    return Object.values(uploads)
+      .filter(
+        (upload) =>
+          upload.status === "uploading" && !realFileNames.has(upload.name),
+      )
+      .map(
         (upload): BrowserFile => ({
           id: `upload-${upload.name}`,
           name: upload.name,
@@ -123,14 +128,13 @@ export default function FileList({
           hasThumbnail: false,
           isFolder: false,
           trashed: false,
-          source: "google-drive",
+          source: "local" as const,
           uploadProgress: upload.progress,
           uploadStatus: upload.status,
           uploadError: upload.error,
         }),
-      ),
-    [uploads],
-  );
+      );
+  }, [uploads, files]);
 
   const allItems = useMemo(
     () => [...uploadGhostFiles, ...files],

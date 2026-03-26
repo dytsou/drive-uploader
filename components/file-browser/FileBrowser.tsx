@@ -5,6 +5,7 @@ import FileBrowserHeader from "@/components/file-browser/FileBrowserHeader";
 import ImageGallery from "@/components/features/ImageGallery";
 import FileBrowserModals from "@/components/file-browser/FileBrowserModals";
 import FileBrowserContent from "@/components/file-browser/FileBrowserContent";
+import FileUploadManager from "@/components/file-browser/FileUploadManager";
 import {
   useFileBrowserController,
   type FileBrowserProps,
@@ -29,6 +30,7 @@ export default function FileBrowser(props: FileBrowserProps) {
       </div>
 
       <FileBrowserModals {...modalsProps} />
+      <FileUploadManager />
       <ImageGallery {...galleryProps} />
     </motion.div>
   );

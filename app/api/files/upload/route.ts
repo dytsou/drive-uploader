@@ -37,10 +37,9 @@ export const POST = createEditorRoute(
     const uploadType = query.type;
 
     try {
-      const accessToken = await getAccessToken();
-
       if (uploadType === "init") {
-        const parsedBody = uploadInitBodySchema.safeParse(await request.json());
+        const body = await request.json();
+        const parsedBody = uploadInitBodySchema.safeParse(body);
         if (!parsedBody.success) {
           return NextResponse.json(
             {
@@ -53,6 +52,15 @@ export const POST = createEditorRoute(
 
         const { name, mimeType, parentId, size } = parsedBody.data;
 
+        if (parentId.startsWith("local-storage:")) {
+          return NextResponse.json({
+            uploadUrl: `local-storage-upload://${encodeURIComponent(
+              parentId,
+            )}/${encodeURIComponent(name)}`,
+          });
+        }
+
+        const accessToken = await getAccessToken();
         const metadata = {
           name,
           mimeType,
@@ -84,6 +92,41 @@ export const POST = createEditorRoute(
       } else if (uploadType === "chunk") {
         const uploadUrl = query.uploadUrl!;
         const parentId = query.parentId;
+
+        if (uploadUrl.startsWith("local-storage-upload://")) {
+          const { saveLocalChunk } = await import("@/lib/storage/local");
+          const chunkBuffer = await request.arrayBuffer();
+          const contentRange = request.headers.get("Content-Range") || "";
+
+          const result = await saveLocalChunk(
+            uploadUrl,
+            chunkBuffer,
+            contentRange,
+          );
+
+          if (result.status === "completed" && result.file) {
+            if (parentId) {
+              await invalidateFolderCache(parentId);
+            }
+
+            await logActivity("UPLOAD", {
+              itemName: result.file.name,
+              itemId: result.file.id,
+              itemSize: result.file.size,
+              userEmail: session.user?.email,
+              status: "success",
+              metadata: {
+                operation: "file_upload",
+                fileId: result.file.id,
+                parentId: parentId || undefined,
+                uploadType: "chunk",
+              },
+            });
+          }
+
+          return NextResponse.json(result);
+        }
+
         const contentRange = request.headers.get("Content-Range");
         const contentLength = request.headers.get("Content-Length");
 
