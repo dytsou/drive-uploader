@@ -42,7 +42,7 @@ export async function listLocalFiles(
       const isFolder = entry.isDirectory();
 
       return {
-        id: `local://${relativePath}`,
+        id: `local-storage:${relativePath}`,
         name: entry.name,
         mimeType: isFolder
           ? "application/vnd.google-apps.folder"
@@ -73,7 +73,11 @@ export async function getLocalFileDetails(
     filePath.startsWith("/") ? filePath.substring(1) : filePath,
   );
 
-  if (!absolutePath.startsWith(path.resolve(LOCAL_ROOT))) {
+  const root = path.resolve(LOCAL_ROOT);
+  if (!absolutePath.toLowerCase().startsWith(root.toLowerCase())) {
+    console.error(
+      `[Storage] Path traversal attempt: ${absolutePath} does not start with ${root}`,
+    );
     return null;
   }
 
@@ -85,7 +89,7 @@ export async function getLocalFileDetails(
       .replace(/\\/g, "/");
 
     return {
-      id: `local://${relativePath}`,
+      id: `local-storage:${relativePath}`,
       name: path.basename(absolutePath),
       mimeType: isFolder
         ? "application/vnd.google-apps.folder"

@@ -18,18 +18,19 @@ export const GET = createPublicRoute(
     }
 
     const { searchParams } = new URL(request.url);
-    const fileId = searchParams.get("fileId");
-    if (!fileId) {
+    const fileIdRaw = searchParams.get("fileId");
+    if (!fileIdRaw) {
       return NextResponse.json(
         { error: "Parameter fileId tidak ditemukan." },
         { status: 400 },
       );
     }
+    const fileId = decodeURIComponent(fileIdRaw);
 
     const isAdmin = session?.user?.role === "ADMIN";
 
     if (!isAdmin) {
-      if (!fileId.startsWith("local://")) {
+      if (!fileId.startsWith("local-storage:")) {
         const isRestricted = await isAccessRestricted(fileId);
         if (isRestricted) {
           return NextResponse.json({ error: "Access Denied" }, { status: 403 });

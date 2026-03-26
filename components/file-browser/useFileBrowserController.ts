@@ -284,9 +284,9 @@ export function useFileBrowserController({
 
     let destinationUrl = "";
     if (file.isFolder) {
-      destinationUrl = `/folder/${file.id}`;
+      destinationUrl = `/folder/${encodeURIComponent(file.id)}`;
     } else {
-      destinationUrl = `/folder/${currentFolderId}/file/${file.id}/${createSlug(
+      destinationUrl = `/folder/${encodeURIComponent(currentFolderId!)}/file/${encodeURIComponent(file.id)}/${createSlug(
         file.name,
       )}`;
     }
@@ -437,7 +437,7 @@ export function useFileBrowserController({
     let folderUrl =
       folderId === process.env.NEXT_PUBLIC_ROOT_FOLDER_ID
         ? "/"
-        : `/folder/${folderId}`;
+        : `/folder/${encodeURIComponent(folderId)}`;
     if (shareToken) {
       folderUrl += `?share_token=${shareToken}`;
     }

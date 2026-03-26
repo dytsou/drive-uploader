@@ -1,4 +1,4 @@
-import { getFileDetailsFromDrive, listFilesFromDrive } from "@/lib/drive";
+import { getAnyFileDetails, listAllFiles } from "@/lib/storage";
 import FileDetailClient from "@/components/file-browser/FileDetailClient";
 import { getTranslations } from "next-intl/server";
 import { auth } from "@/auth";
@@ -90,14 +90,15 @@ export default async function FilePage(props: {
   let subtitleTracks: SubtitleTrack[] = [];
 
   try {
-    file = await getFileDetailsFromDrive(params.fileId);
+    file = await getAnyFileDetails(params.fileId);
 
     if (file && params.folderId) {
-      const { files: allFiles } = await listFilesFromDrive(
-        params.folderId,
-        null,
-        1000,
-      );
+      const { files: allFiles } = await listAllFiles({
+        folderId: params.folderId,
+        pageToken: null,
+        pageSize: 1000,
+        useCache: true,
+      });
 
       const nonFolderFiles = allFiles.filter((f) => !f.isFolder);
       const currentIndex = nonFolderFiles.findIndex(

@@ -10,12 +10,12 @@ export const revalidate = 3600;
 type ProtectedFolderMap = Record<string, boolean>;
 
 async function getUnifiedPath(folderId: string, locale: string) {
-  if (folderId.startsWith("local://")) {
-    const localPath = folderId.replace("local://", "");
+  if (folderId.startsWith("local-storage:")) {
+    const localPath = folderId.replace("local-storage:", "");
     const segments = localPath.split("/").filter(Boolean);
     const pathNodes = [
       {
-        id: "local://",
+        id: "local-storage:",
         name: locale === "id" ? "Penyimpanan Lokal" : "Local Storage",
       },
     ];
@@ -23,7 +23,7 @@ async function getUnifiedPath(folderId: string, locale: string) {
     let currentPath = "";
     segments.forEach((segment) => {
       currentPath += segment + "/";
-      pathNodes.push({ id: `local://${currentPath}`, name: segment });
+      pathNodes.push({ id: `local-storage:${currentPath}`, name: segment });
     });
 
     return pathNodes;
@@ -83,7 +83,9 @@ export default async function FolderPage(props: {
   const [folderPath, protectedStatus, allProtectedFolders, isPrivateFolder] =
     await Promise.all([
       getUnifiedPath(cleanFolderId, locale),
-      cleanFolderId.startsWith("local://") ? false : isProtected(cleanFolderId),
+      cleanFolderId.startsWith("local-storage:")
+        ? false
+        : isProtected(cleanFolderId),
       import("@/lib/db").then((m) =>
         m.db.protectedFolder
           .findMany({ select: { folderId: true } })
@@ -102,7 +104,7 @@ export default async function FolderPage(props: {
   let initialNextPageToken: string | null = null;
 
   const isLocked =
-    !cleanFolderId.startsWith("local://") &&
+    !cleanFolderId.startsWith("local-storage:") &&
     (protectedStatus || isPrivateFolder(cleanFolderId));
 
   if (!isLocked) {

@@ -8,7 +8,8 @@ import { ZeeFile, ListFilesResponse, ListFilesOptions } from "@/types/storage";
 export async function listAllFiles(
   options: ListFilesOptions,
 ): Promise<ListFilesResponse> {
-  const { folderId, pageToken, pageSize, useCache } = options;
+  const { folderId: rawFolderId, pageToken, pageSize, useCache } = options;
+  const folderId = decodeURIComponent(rawFolderId);
 
   if (folderId === "virtual-root") {
     const driveRoot = process.env.NEXT_PUBLIC_ROOT_FOLDER_ID || "";
@@ -30,7 +31,7 @@ export async function listAllFiles(
 
     if (localEnabled) {
       files.push({
-        id: "local://",
+        id: "local-storage:",
         name: "Local Storage",
         mimeType: "application/vnd.google-apps.folder",
         isFolder: true,
@@ -43,8 +44,8 @@ export async function listAllFiles(
     return { files, nextPageToken: null };
   }
 
-  if (folderId.startsWith("local://")) {
-    const localPath = folderId.replace("local://", "");
+  if (folderId.startsWith("local-storage:")) {
+    const localPath = folderId.replace("local-storage:", "");
     return listLocalFiles(localPath);
   }
 
@@ -68,8 +69,13 @@ export async function listAllFiles(
 export async function getAnyFileDetails(
   fileId: string,
 ): Promise<ZeeFile | null> {
-  if (fileId.startsWith("local://")) {
-    const localPath = fileId.replace("local://", "");
+  const cleanId = decodeURIComponent(fileId);
+  console.log(
+    `[Storage] getAnyFileDetails called with: ${fileId} (cleaned: ${cleanId})`,
+  );
+  if (cleanId.startsWith("local-storage:")) {
+    const localPath = cleanId.replace("local-storage:", "");
+    console.log(`[Storage] Fetching local file: ${localPath} (ID: ${cleanId})`);
     return getLocalFileDetails(localPath);
   }
 
@@ -84,6 +90,6 @@ export async function getAnyFileDetails(
 }
 
 export async function getDownloadStream(fileId: string) {
-  if (fileId.startsWith("local://")) {
+  if (fileId.startsWith("local-storage:")) {
   }
 }

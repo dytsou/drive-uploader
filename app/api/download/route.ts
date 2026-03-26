@@ -29,7 +29,7 @@ async function handleDownload(request: NextRequest) {
     const { fileId, range } = context;
     logger.info({ fileId }, "[Download] Starting download");
 
-    if (fileId.startsWith("local://")) {
+    if (fileId.startsWith("local-storage:")) {
       const { getLocalFilePath, getLocalFileDetails } = await import(
         "@/lib/storage/local"
       );
@@ -37,7 +37,7 @@ async function handleDownload(request: NextRequest) {
       const { createReadStream } = await import("fs");
       const { stat } = await import("fs/promises");
 
-      const localPath = fileId.replace("local://", "");
+      const localPath = fileId.replace("local-storage:", "");
       const absolutePath = await getLocalFilePath(localPath);
       const fileStats = await stat(absolutePath);
 

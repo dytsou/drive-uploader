@@ -53,7 +53,7 @@ export default function NavSection({ t }: NavSectionProps) {
 
       {/* Local Storage Folder */}
       <button
-        onClick={() => handleNav("local", "/folder/local%3A%2F%2F")}
+        onClick={() => handleNav("local", "/folder/local-storage%3A")}
         id="sidebar-nav-local"
         className={cn(
           "w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md hover:bg-accent/50 transition-colors",

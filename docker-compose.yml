@@ -63,6 +63,7 @@ services:
     volumes:
       - .env:/app/.env
       - ./public/uploads:/app/public/uploads
+      - ./storage:/app/storage
     deploy:
       resources:
         limits:
