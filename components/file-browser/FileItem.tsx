@@ -412,11 +412,13 @@ function FileItem({
                   onMouseDown={preventSelection}
                 >
                   {file.size ? formatBytes(parseInt(file.size)) : "-"} •{" "}
-                  {format.dateTime(new Date(file.modifiedTime), {
-                    day: "numeric",
-                    month: "short",
-                    year: "numeric",
-                  })}
+                  {file.modifiedTime
+                    ? format.dateTime(new Date(file.modifiedTime), {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                      })
+                    : "-"}
                 </p>
               )}
 

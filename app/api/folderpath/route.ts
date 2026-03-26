@@ -141,6 +141,31 @@ export const GET = createPublicRoute(
     const cacheKey = `zee-index:folder-path-v7:${folderId}:${locale}`;
 
     try {
+      if (folderId === "virtual-root") {
+        return NextResponse.json([
+          { id: "virtual-root", name: locale === "id" ? "Beranda" : "Home" },
+        ]);
+      }
+
+      if (folderId.startsWith("local://")) {
+        const localPath = folderId.replace("local://", "");
+        const segments = localPath.split("/").filter(Boolean);
+        const pathNodes = [
+          {
+            id: "local://",
+            name: locale === "id" ? "Penyimpanan Lokal" : "Local Storage",
+          },
+        ];
+
+        let currentPath = "";
+        segments.forEach((segment) => {
+          currentPath += segment + "/";
+          pathNodes.push({ id: `local://${currentPath}`, name: segment });
+        });
+
+        return NextResponse.json(pathNodes);
+      }
+
       const cachedPath: { id: string; name: string }[] | null =
         await kv.get(cacheKey);
       if (cachedPath) {

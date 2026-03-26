@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import path from "path";
 import { createPublicRoute } from "@/lib/api-middleware";
 import { getAccessToken, getFileDetailsFromDrive } from "@/lib/drive";
 import { logActivity } from "@/lib/activityLogger";
@@ -27,6 +28,58 @@ async function handleDownload(request: NextRequest) {
 
     const { fileId, range } = context;
     logger.info({ fileId }, "[Download] Starting download");
+
+    if (fileId.startsWith("local://")) {
+      const { getLocalFilePath, getLocalFileDetails } = await import(
+        "@/lib/storage/local"
+      );
+      const { getMimeType } = await import("@/lib/storage/mime");
+      const { createReadStream } = await import("fs");
+      const { stat } = await import("fs/promises");
+
+      const localPath = fileId.replace("local://", "");
+      const absolutePath = await getLocalFilePath(localPath);
+      const fileStats = await stat(absolutePath);
+
+      if (fileStats.isDirectory()) {
+        return NextResponse.json(
+          { error: ERROR_MESSAGES.FOLDER_DOWNLOAD_NOT_SUPPORTED },
+          { status: 400 },
+        );
+      }
+
+      const mimeType = getMimeType(absolutePath);
+      const filename = path.basename(absolutePath);
+
+      const stream = createReadStream(absolutePath);
+      const webStream = new ReadableStream({
+        start(controller) {
+          stream.on("data", (chunk) => controller.enqueue(chunk));
+          stream.on("end", () => controller.close());
+          stream.on("error", (err) => controller.error(err));
+        },
+        cancel() {
+          stream.destroy();
+        },
+      });
+
+      const responseHeaders = prepareResponseHeaders(
+        mimeType,
+        filename,
+        range,
+        request.headers.get("Sec-Fetch-Dest"),
+        null,
+        false,
+        request.headers.get("origin"),
+      );
+      responseHeaders.set("Content-Length", fileStats.size.toString());
+      responseHeaders.set("Accept-Ranges", "bytes");
+
+      return new Response(webStream, {
+        status: 200,
+        headers: responseHeaders,
+      });
+    }
 
     const [accessToken, fileDetails] = await Promise.all([
       getAccessToken(),

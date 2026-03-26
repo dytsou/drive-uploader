@@ -8,6 +8,7 @@ import {
   Trash2,
   ShieldCheck,
   Loader2,
+  Server,
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
@@ -49,6 +50,23 @@ export default function NavSection({ t }: NavSectionProps) {
         )}{" "}
         {t("home")}
       </button>
+
+      {/* Local Storage Folder */}
+      <button
+        onClick={() => handleNav("local", "/folder/local%3A%2F%2F")}
+        id="sidebar-nav-local"
+        className={cn(
+          "w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md hover:bg-accent/50 transition-colors",
+          pathname.includes("local") && "bg-accent font-medium text-primary",
+        )}
+      >
+        {navigatingId === "local" ? (
+          <Loader2 size={16} className="animate-spin" />
+        ) : (
+          <Server size={16} />
+        )}{" "}
+        {t("localCloud")}
+      </button>
       <button
         onClick={() => handleNav("favorites", "/favorites")}
         id="sidebar-nav-favorites"
@@ -70,8 +88,7 @@ export default function NavSection({ t }: NavSectionProps) {
         id="sidebar-nav-storage"
         className={cn(
           "w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md hover:bg-accent/50 transition-colors",
-          pathname.includes("/storage") &&
-            "bg-accent font-medium text-primary",
+          pathname.includes("/storage") && "bg-accent font-medium text-primary",
         )}
       >
         {navigatingId === "storage" ? (

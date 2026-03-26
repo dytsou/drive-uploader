@@ -1,33 +1,6 @@
-export interface DriveFile {
-  id: string;
-  name: string;
-  mimeType: string;
-  size?: string;
-  modifiedTime: string;
-  createdTime: string;
-  webViewLink: string;
-  webContentLink?: string;
-  thumbnailLink?: string;
-  hasThumbnail: boolean;
-  isFolder: boolean;
-  isProtected?: boolean;
-  parents?: string[];
-  owners?: { displayName: string; emailAddress: string }[];
-  lastModifyingUser?: { displayName: string };
-  md5Checksum?: string;
-  imageMediaMetadata?: { width: number; height: number };
-  videoMediaMetadata?: {
-    width: number;
-    height: number;
-    durationMillis: string;
-  };
-  trashed: boolean;
-  sharedWithMeTime?: string;
-  shortcutDetails?: {
-    targetId: string;
-    targetMimeType: string;
-  };
-}
+import { ZeeFile } from "@/types/storage";
+
+export type DriveFile = ZeeFile;
 
 export interface DriveRevision {
   id: string;

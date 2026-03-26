@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createPublicRoute } from "@/lib/api-middleware";
-import { getFileDetailsFromDrive } from "@/lib/drive";
+import { getAnyFileDetails } from "@/lib/storage";
 import { validateShareToken } from "@/lib/auth";
 import { isAccessRestricted } from "@/lib/securityUtils";
 
@@ -29,14 +29,16 @@ export const GET = createPublicRoute(
     const isAdmin = session?.user?.role === "ADMIN";
 
     if (!isAdmin) {
-      const isRestricted = await isAccessRestricted(fileId);
-      if (isRestricted) {
-        return NextResponse.json({ error: "Access Denied" }, { status: 403 });
+      if (!fileId.startsWith("local://")) {
+        const isRestricted = await isAccessRestricted(fileId);
+        if (isRestricted) {
+          return NextResponse.json({ error: "Access Denied" }, { status: 403 });
+        }
       }
     }
 
     try {
-      const details = await getFileDetailsFromDrive(fileId);
+      const details = await getAnyFileDetails(fileId);
       return NextResponse.json(details);
     } catch (error: unknown) {
       const errorMessage =

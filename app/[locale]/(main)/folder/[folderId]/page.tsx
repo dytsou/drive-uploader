@@ -1,5 +1,7 @@
 import FileBrowser from "@/components/file-browser/FileBrowser";
-import { getFolderPath, listFilesFromDrive, type DriveFile } from "@/lib/drive";
+import { getFolderPath, listFilesFromDrive } from "@/lib/drive";
+import { listAllFiles } from "@/lib/storage";
+import { ZeeFile } from "@/types/storage";
 import { isProtected } from "@/lib/auth";
 import { Metadata } from "next";
 
@@ -7,12 +9,34 @@ export const revalidate = 3600;
 
 type ProtectedFolderMap = Record<string, boolean>;
 
+async function getUnifiedPath(folderId: string, locale: string) {
+  if (folderId.startsWith("local://")) {
+    const localPath = folderId.replace("local://", "");
+    const segments = localPath.split("/").filter(Boolean);
+    const pathNodes = [
+      {
+        id: "local://",
+        name: locale === "id" ? "Penyimpanan Lokal" : "Local Storage",
+      },
+    ];
+
+    let currentPath = "";
+    segments.forEach((segment) => {
+      currentPath += segment + "/";
+      pathNodes.push({ id: `local://${currentPath}`, name: segment });
+    });
+
+    return pathNodes;
+  }
+  return getFolderPath(folderId, locale);
+}
+
 export async function generateMetadata(props: {
   params: Promise<{ folderId: string; locale: string }>;
 }): Promise<Metadata> {
   const params = await props.params;
   const folderId = decodeURIComponent(params.folderId);
-  const path = await getFolderPath(folderId, params.locale);
+  const path = await getUnifiedPath(folderId, params.locale);
   const folderName = path[path.length - 1]?.name || "Folder";
   const appName = process.env.NEXT_PUBLIC_APP_NAME || "Zee Index";
 
@@ -58,8 +82,8 @@ export default async function FolderPage(props: {
 
   const [folderPath, protectedStatus, allProtectedFolders, isPrivateFolder] =
     await Promise.all([
-      getFolderPath(cleanFolderId, locale),
-      isProtected(cleanFolderId),
+      getUnifiedPath(cleanFolderId, locale),
+      cleanFolderId.startsWith("local://") ? false : isProtected(cleanFolderId),
       import("@/lib/db").then((m) =>
         m.db.protectedFolder
           .findMany({ select: { folderId: true } })
@@ -74,14 +98,21 @@ export default async function FolderPage(props: {
       import("@/lib/auth").then((m) => m.isPrivateFolder),
     ]);
 
-  let initialFiles: DriveFile[] | undefined;
+  let initialFiles: ZeeFile[] | undefined;
   let initialNextPageToken: string | null = null;
 
-  const isLocked = protectedStatus || isPrivateFolder(cleanFolderId);
+  const isLocked =
+    !cleanFolderId.startsWith("local://") &&
+    (protectedStatus || isPrivateFolder(cleanFolderId));
 
   if (!isLocked) {
     try {
-      const data = await listFilesFromDrive(cleanFolderId, null, 50, true);
+      const data = await listAllFiles({
+        folderId: cleanFolderId,
+        pageToken: null,
+        pageSize: 50,
+        useCache: true,
+      });
       initialFiles = data.files.map((f) => {
         const isProt = !!allProtectedFolders[f.id];
         const isPriv = isPrivateFolder(f.id);

@@ -282,10 +282,14 @@ export default function DetailsPanel({ file, onClose }: DetailsPanelProps) {
               <QuickStat
                 icon={Calendar}
                 label={t("modified")}
-                value={new Date(file.modifiedTime).toLocaleDateString(locale, {
-                  day: "numeric",
-                  month: "short",
-                })}
+                value={
+                  file.modifiedTime
+                    ? new Date(file.modifiedTime).toLocaleDateString(locale, {
+                        day: "numeric",
+                        month: "short",
+                      })
+                    : "-"
+                }
               />
               <QuickStat
                 icon={FileType}
@@ -322,18 +326,26 @@ export default function DetailsPanel({ file, onClose }: DetailsPanelProps) {
                 <DetailRow
                   icon={Calendar}
                   label={t("modified")}
-                  value={new Date(file.modifiedTime).toLocaleString(locale, {
-                    dateStyle: "medium",
-                    timeStyle: "short",
-                  })}
+                  value={
+                    file.modifiedTime
+                      ? new Date(file.modifiedTime).toLocaleString(locale, {
+                          dateStyle: "medium",
+                          timeStyle: "short",
+                        })
+                      : "-"
+                  }
                 />
                 <DetailRow
                   icon={Calendar}
                   label={t("created")}
-                  value={new Date(file.createdTime).toLocaleString(locale, {
-                    dateStyle: "medium",
-                    timeStyle: "short",
-                  })}
+                  value={
+                    file.createdTime
+                      ? new Date(file.createdTime).toLocaleString(locale, {
+                          dateStyle: "medium",
+                          timeStyle: "short",
+                        })
+                      : "-"
+                  }
                 />
                 <DetailRow
                   icon={HardDrive}

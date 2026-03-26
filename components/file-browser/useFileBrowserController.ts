@@ -470,7 +470,7 @@ export function useFileBrowserController({
       onUploadClick: () => upload.setIsUploadModalOpen(true),
       onShareFolderClick: () =>
         fileActions.handleShare({
-          id: currentFolderId,
+          id: currentFolderId!,
           name: history[history.length - 1]?.name || t("folderDefaultName"),
           isFolder: true,
           mimeType: "application/vnd.google-apps.folder",
@@ -479,6 +479,9 @@ export function useFileBrowserController({
           hasThumbnail: false,
           webViewLink: "",
           trashed: false,
+          source: currentFolderId?.startsWith("local://")
+            ? "local"
+            : "google-drive",
         }),
       onRequestFileClick: () => setIsFileRequestModalOpen(true),
       onToggleBulkMode: () => setBulkMode(!isBulkMode),

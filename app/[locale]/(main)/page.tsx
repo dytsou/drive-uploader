@@ -1,5 +1,6 @@
 import FileBrowser from "@/components/file-browser/FileBrowser";
-import { listFilesFromDrive, type DriveFile } from "@/lib/drive";
+import { listAllFiles } from "@/lib/storage";
+import { ZeeFile } from "@/types/storage";
 import { getRootFolderId } from "@/lib/config";
 
 export const revalidate = 3600;
@@ -7,7 +8,7 @@ export const revalidate = 3600;
 type ProtectedFolderMap = Record<string, boolean>;
 
 export default async function Home() {
-  const rootId = await getRootFolderId();
+  const rootId = (await getRootFolderId()) || "virtual-root";
 
   const [isProtected, isPrivateFolder, db] = await Promise.all([
     import("@/lib/auth").then((m) => m.isProtected),
@@ -15,15 +16,22 @@ export default async function Home() {
     import("@/lib/db").then((m) => m.db),
   ]);
 
-  let initialFiles: DriveFile[] | undefined;
+  let initialFiles: ZeeFile[] | undefined;
   let initialNextPageToken: string | null = null;
 
-  const isLocked = (await isProtected(rootId)) || isPrivateFolder(rootId);
+  const isLocked =
+    rootId !== "virtual-root" &&
+    ((await isProtected(rootId)) || isPrivateFolder(rootId));
 
   if (!isLocked) {
     try {
       const [data, allProtectedFolders] = await Promise.all([
-        listFilesFromDrive(rootId, null, 50, true),
+        listAllFiles({
+          folderId: rootId,
+          pageToken: null,
+          pageSize: 50,
+          useCache: true,
+        }),
         db.protectedFolder
           .findMany({ select: { folderId: true } })
           .then((res: { folderId: string }[]) => {

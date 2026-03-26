@@ -79,7 +79,9 @@
     "trash": "Sampah",
     "admin": "Admin",
     "sharedDrives": "Drive Bersama",
-    "explorer": "Penjelajah"
+    "explorer": "Penjelajah",
+    "googleDrive": "Google Drive",
+    "localCloud": "Penyimpanan Lokal"
   },
   "Header": {
     "switchTheme": "Ganti Tema",
@@ -525,7 +527,8 @@
     "home": "Beranda",
     "favorites": "Favorit",
     "storage": "Penyimpanan",
-    "admin": "Admin"
+    "admin": "Admin",
+    "local": "Lokal"
   },
   "BulkActionBar": {
     "zipError": "Tidak ada file yang dipilih untuk dikompres.",

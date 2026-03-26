@@ -79,7 +79,9 @@
     "trash": "Trash",
     "admin": "Admin",
     "sharedDrives": "Shared Drives",
-    "explorer": "Explorer"
+    "explorer": "Explorer",
+    "googleDrive": "Google Drive",
+    "localCloud": "Local Storage"
   },
   "Header": {
     "switchTheme": "Switch Theme",
@@ -525,7 +527,8 @@
     "home": "Home",
     "favorites": "Favorites",
     "storage": "Storage",
-    "admin": "Admin"
+    "admin": "Admin",
+    "local": "Local"
   },
   "BulkActionBar": {
     "zipError": "No files selected to zip.",

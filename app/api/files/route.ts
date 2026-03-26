@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createPublicRoute } from "@/lib/api-middleware";
-import { listFilesFromDrive, DriveFile } from "@/lib/drive";
+import { listAllFiles } from "@/lib/storage";
+import { ZeeFile } from "@/types/storage";
 import { isPrivateFolder } from "@/lib/auth";
 import { isAccessRestricted } from "@/lib/securityUtils";
 import { getProtectedFolderIdsCached } from "@/lib/securityUtils";
@@ -95,7 +96,12 @@ export const GET = createPublicRoute(
       }
 
       const [driveResponse, protectedFolderIds] = await Promise.all([
-        listFilesFromDrive(folderId, pageToken, 50, !forceRefresh),
+        listAllFiles({
+          folderId,
+          pageToken: pageToken || undefined,
+          pageSize: 50,
+          useCache: !forceRefresh,
+        }),
         getProtectedFolderIdsCached(),
       ]);
 
@@ -104,25 +110,25 @@ export const GET = createPublicRoute(
         protectedFolderMap[id] = true;
       });
 
-      let filteredFiles: DriveFile[];
+      let filteredFiles: ZeeFile[];
 
       if (canSeeAll) {
         filteredFiles = driveResponse.files;
       } else {
-        const privateFoldersToCheck = driveResponse.files.filter(
-          (f: DriveFile) => isPrivateFolder(f.id),
+        const privateFoldersToCheck = driveResponse.files.filter((f: ZeeFile) =>
+          isPrivateFolder(f.id),
         );
         const accessMap =
           userEmail && privateFoldersToCheck.length > 0
             ? await import("@/lib/auth").then((m) =>
                 m.hasUserAccessBatch(
                   userEmail,
-                  privateFoldersToCheck.map((f: DriveFile) => f.id),
+                  privateFoldersToCheck.map((f: ZeeFile) => f.id),
                 ),
               )
             : {};
 
-        filteredFiles = driveResponse.files.filter((file: DriveFile) => {
+        filteredFiles = driveResponse.files.filter((file: ZeeFile) => {
           const isPriv = isPrivateFolder(file.id);
           const isProt = !!protectedFolderMap[file.id];
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { Home, Star, ShieldCheck, HardDrive } from "lucide-react";
+import { Home, Star, ShieldCheck, HardDrive, Server } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/lib/store";
@@ -17,6 +17,7 @@ export default function MobileBottomNav() {
 
   const navItems = [
     { label: t("home"), icon: Home, path: "/" },
+    { label: t("local"), icon: Server, path: "/folder/local%3A%2F%2F" },
     { label: t("favorites"), icon: Star, path: "/favorites" },
     { label: t("storage"), icon: HardDrive, path: "/storage" },
   ];
@@ -31,8 +32,10 @@ export default function MobileBottomNav() {
         {navItems.map((item) => {
           const isHome = item.path === "/";
           const isActive = isHome
-            ? pathname === "/" || pathname.startsWith("/folder")
-            : pathname.startsWith(item.path);
+            ? pathname === "/" ||
+              (pathname.startsWith("/folder") && !pathname.includes("local"))
+            : pathname.includes(item.path) ||
+              (item.path.includes("local") && pathname.includes("local"));
 
           const Icon = item.icon;
 

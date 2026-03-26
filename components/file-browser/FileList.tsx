@@ -123,6 +123,7 @@ export default function FileList({
           hasThumbnail: false,
           isFolder: false,
           trashed: false,
+          source: "google-drive",
           uploadProgress: upload.progress,
           uploadStatus: upload.status,
           uploadError: upload.error,
