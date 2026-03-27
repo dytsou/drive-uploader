@@ -23,20 +23,20 @@ export default function SetupRequired({
   const isExpired = type === "expired";
 
   const containerVariants = {
-    hidden: { opacity: 0, y: 10 },
+    hidden: { opacity: 0, y: 12 },
     visible: {
       opacity: 1,
       y: 0,
       transition: {
-        duration: 0.4,
+        duration: 0.5,
         ease: "easeOut",
-        staggerChildren: 0.05,
+        staggerChildren: 0.08,
       },
     },
   };
 
   const itemVariants = {
-    hidden: { opacity: 0, y: 10 },
+    hidden: { opacity: 0, y: 8 },
     visible: {
       opacity: 1,
       y: 0,
@@ -45,63 +45,74 @@ export default function SetupRequired({
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[70vh] w-full px-6 bg-background">
+    <div className="flex flex-col items-center justify-center min-h-[60vh] w-full px-6 bg-background rounded-3xl">
       <motion.div
         variants={containerVariants}
         initial="hidden"
         animate="visible"
-        className="flex flex-col items-center text-center max-w-[420px]"
+        className="flex flex-col items-center w-full max-w-[400px]"
       >
-        <motion.div variants={itemVariants} className="mb-6">
-          <div className="flex items-center justify-center w-16 h-16 rounded-full bg-secondary/30 text-muted-foreground">
+        {/* Icon Container with absolute centering */}
+        <motion.div variants={itemVariants} className="mb-6 relative">
+          <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-muted/50 border border-border/50">
             {isExpired ? (
-              <ShieldAlert size={28} strokeWidth={1.5} />
+              <ShieldAlert
+                className="w-7 h-7 text-muted-foreground/80"
+                strokeWidth={1.5}
+              />
             ) : (
-              <Database size={28} strokeWidth={1.5} />
+              <Database
+                className="w-7 h-7 text-muted-foreground/80"
+                strokeWidth={1.5}
+              />
             )}
           </div>
         </motion.div>
 
-        <motion.div variants={itemVariants} className="space-y-3 mb-10">
-          <h2 className="text-2xl font-semibold tracking-tight text-foreground">
+        <motion.div
+          variants={itemVariants}
+          className="text-center space-y-2 mb-8"
+        >
+          <h2 className="text-xl font-bold text-foreground">
             {isExpired ? "Sesi Berakhir" : "Setup Diperlukan"}
           </h2>
-          <p className="text-sm text-muted-foreground leading-relaxed">
+          <p className="text-[13px] text-muted-foreground leading-relaxed px-2">
             {message ||
-              "Koneksi ke Google Drive terputus atau tidak valid. Silakan lakukan konfigurasi ulang untuk melanjutkan akses file Anda."}
+              "Koneksi ke Google Drive terputus. Silakan konfigurasi ulang untuk melanjutkan."}
           </p>
         </motion.div>
 
         <motion.div
           variants={itemVariants}
-          className="flex flex-col sm:flex-row items-center w-full gap-3 mb-12"
+          className="flex flex-col w-full gap-2.5"
         >
           <button
             onClick={() => (window.location.href = "/setup")}
-            className="flex items-center justify-center gap-2 w-full sm:flex-1 h-11 px-6 bg-primary text-primary-foreground hover:bg-primary/90 text-sm font-medium rounded-lg transition-colors"
+            className="group flex items-center justify-center gap-2 h-11 px-6 bg-foreground text-background hover:opacity-90 text-[13px] font-semibold rounded-xl transition-all"
           >
-            <Settings size={16} />
+            <Settings
+              size={15}
+              className="group-hover:rotate-45 transition-transform"
+            />
             <span>Buka Halaman Setup</span>
-            <ArrowRight size={16} className="ml-1" />
+            <ArrowRight size={15} />
           </button>
 
           <button
             onClick={() => window.location.reload()}
-            className="flex items-center justify-center gap-2 w-full sm:flex-1 h-11 px-6 bg-transparent hover:bg-secondary/50 text-foreground border border-border text-sm font-medium rounded-lg transition-colors"
+            className="flex items-center justify-center gap-2 h-11 px-6 bg-transparent hover:bg-secondary/50 text-foreground border border-border text-[13px] font-medium rounded-xl transition-colors"
           >
-            <RefreshCw size={16} />
+            <RefreshCw size={14} />
             <span>Coba Lagi</span>
           </button>
         </motion.div>
 
         <motion.div
           variants={itemVariants}
-          className="flex items-center gap-2 text-[11px] font-medium text-muted-foreground/60 uppercase tracking-wider"
+          className="mt-10 flex items-center gap-1.5 py-1 px-3 rounded-full bg-destructive/5 text-[10px] uppercase font-bold tracking-[0.05em] text-destructive/70 border border-destructive/10"
         >
-          <AlertCircle size={12} />
-          <span>
-            Status Error: {isExpired ? "INVALID_GRANT" : "MISSING_CONFIG"}
-          </span>
+          <AlertCircle size={10} />
+          <span>Status: {isExpired ? "INVALID_GRANT" : "MISSING_CONFIG"}</span>
         </motion.div>
       </motion.div>
     </div>
