@@ -7,6 +7,7 @@ import FileBrowserLoading from "@/components/file-browser/FileBrowserLoading";
 import FolderReadme from "@/components/file-browser/FolderReadme";
 import PinnedSection from "@/components/file-browser/PinnedSection";
 import AuthForm from "@/components/features/AuthForm";
+import LocalStorageAuthForm from "@/components/features/LocalStorageAuthForm";
 import { Lock } from "lucide-react";
 import type { DriveFile } from "@/lib/drive";
 import { useKeyboardNavigation } from "@/hooks/useKeyboardNavigation";
@@ -25,6 +26,7 @@ interface FileBrowserContentProps {
   lockedFolderName?: string;
   lockedFolderId?: string;
   onAuthSubmit: (id: string, pass: string) => void;
+  onLocalAuthSubmit: (password: string) => Promise<boolean>;
   isAuthLoading: boolean;
   readmeFile: DriveFile | undefined;
   sortedFiles: BrowserFile[];
@@ -63,6 +65,7 @@ export default function FileBrowserContent(props: FileBrowserContentProps) {
     lockedFolderName,
     lockedFolderId,
     onAuthSubmit,
+    onLocalAuthSubmit,
     isAuthLoading,
     readmeFile,
     sortedFiles,
@@ -109,7 +112,6 @@ export default function FileBrowserContent(props: FileBrowserContentProps) {
   if (isLoading || (sessionStatus === "loading" && !shareToken)) {
     return <FileBrowserLoading />;
   }
-
   if (isLocked) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[calc(100vh-10rem)] w-full animate-in fade-in duration-500">
@@ -118,6 +120,17 @@ export default function FileBrowserContent(props: FileBrowserContentProps) {
           folderName={lockedFolderName || t("lockedFolder")}
           isLoading={isAuthLoading}
           onSubmit={onAuthSubmit}
+        />
+      </div>
+    );
+  }
+
+  if (error?.isLocalAuthNeeded) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-10rem)] w-full">
+        <LocalStorageAuthForm
+          isLoading={isAuthLoading}
+          onSubmit={onLocalAuthSubmit}
         />
       </div>
     );

@@ -99,7 +99,7 @@ export const RATE_LIMITS = {
     WINDOW: 60 * 5,
   },
   ADMIN: {
-    LIMIT: 50,
+    LIMIT: 200,
     WINDOW: 60,
   },
 } as const;

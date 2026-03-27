@@ -52,46 +52,61 @@ export const GET = createPublicRoute(
       }
 
       const canSeeAll = userRole === "ADMIN";
-
       const isRestricted = await isAccessRestricted(folderId, [], userEmail);
 
-      if (!canSeeAll && isRestricted) {
-        const authHeader = request.headers.get("Authorization");
-        const token = authHeader?.split(" ")[1];
+      const isLocalStorage = folderId.startsWith("local-storage:");
+      if ((!canSeeAll || isLocalStorage) && isRestricted) {
+        if (isLocalStorage) {
+          const { checkLocalStorageAccess } = await import("@/lib/auth");
+          const hasLocalAccess = await checkLocalStorageAccess(request);
 
-        let accessGranted = false;
-        if (token) {
-          try {
-            const secret = new TextEncoder().encode(
-              process.env.SHARE_SECRET_KEY!,
+          if (!hasLocalAccess) {
+            return NextResponse.json(
+              {
+                error: "Autentikasi Local Storage diperlukan",
+                isLocalAuthNeeded: true,
+              },
+              { status: 401 },
             );
-            const { payload } = await jwtVerify(token, secret);
-            const authorizedFolderId = payload.folderId as string;
-
-            if (authorizedFolderId) {
-              const stillRestricted = await isAccessRestricted(
-                folderId,
-                [authorizedFolderId],
-                userEmail,
-              );
-              if (!stillRestricted) {
-                accessGranted = true;
-              }
-            }
-          } catch (e) {
-            console.error("[Files API] Token verification failed:", e);
           }
-        }
+        } else {
+          const authHeader = request.headers.get("Authorization");
+          const token = authHeader?.split(" ")[1];
 
-        if (!accessGranted) {
-          return NextResponse.json(
-            {
-              error: "Authentication required for this folder.",
-              protected: true,
-              folderId: folderId,
-            },
-            { status: 401 },
-          );
+          let accessGranted = false;
+          if (token) {
+            try {
+              const secret = new TextEncoder().encode(
+                process.env.SHARE_SECRET_KEY!,
+              );
+              const { payload } = await jwtVerify(token, secret);
+              const authorizedFolderId = payload.folderId as string;
+
+              if (authorizedFolderId) {
+                const stillRestricted = await isAccessRestricted(
+                  folderId,
+                  [authorizedFolderId],
+                  userEmail,
+                );
+                if (!stillRestricted) {
+                  accessGranted = true;
+                }
+              }
+            } catch (e) {
+              console.error("[Files API] Token verification failed:", e);
+            }
+          }
+
+          if (!accessGranted && !folderId.startsWith("local-storage:")) {
+            return NextResponse.json(
+              {
+                error: "Authentication required for this folder.",
+                protected: true,
+                folderId: folderId,
+              },
+              { status: 401 },
+            );
+          }
         }
       }
 
@@ -150,7 +165,7 @@ export const GET = createPublicRoute(
         return {
           ...file,
           isFolder: file.mimeType === "application/vnd.google-apps.folder",
-          isProtected: !canSeeAll && (isProt || isPriv),
+          isProtected: (isProt || isPriv) && (!canSeeAll || isLocalStorage),
         };
       });
 

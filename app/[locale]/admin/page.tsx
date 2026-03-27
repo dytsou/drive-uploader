@@ -105,6 +105,7 @@ export default function AdminPage() {
       if (!user) {
         fetchUser();
       }
+
       fetchShareLinks();
       fetchFileRequests();
       fetchAdminEmails();
@@ -112,30 +113,28 @@ export default function AdminPage() {
 
       setIsLoadingStats(true);
       fetch("/api/admin/stats")
-        .then((res) => res.json())
+        .then((res) => {
+          if (res.status === 429) {
+            throw new Error("Rate limit exceeded");
+          }
+          return res.json();
+        })
         .then((data) => {
           if (data.error) throw new Error(data.error);
           setStats(data);
         })
-        .catch((err) =>
-          addToast({
-            message: t("loadingStatsError", { error: err.message }),
-            type: "error",
-          }),
-        )
+        .catch((err) => {
+          console.error("Stats fetch error:", err);
+          if (err.message !== "Rate limit exceeded") {
+            addToast({
+              message: t("loadingStatsError", { error: err.message }),
+              type: "error",
+            });
+          }
+        })
         .finally(() => setIsLoadingStats(false));
     }
-  }, [
-    status,
-    user,
-    fetchUser,
-    fetchShareLinks,
-    fetchFileRequests,
-    fetchAdminEmails,
-    fetchEditorEmails,
-    addToast,
-    t,
-  ]);
+  }, [status]);
 
   const { expiredLinks } = useMemo(() => {
     const now = new Date();

@@ -54,6 +54,7 @@ function createRequestError(
   return new RequestError(payload.error || fallbackMessage, {
     status,
     isProtected: payload.protected ?? false,
+    isLocalAuthNeeded: payload.isLocalAuthNeeded ?? false,
     folderId: payload.folderId || folderId,
   });
 }
@@ -93,6 +94,13 @@ const fetchFilesApi = async ({
         folderId,
       );
     }
+    if (response.status === 401 && errorData.isLocalAuthNeeded) {
+      throw new RequestError(errorData.error || "Local Storage Terkunci", {
+        status: 401,
+        isLocalAuthNeeded: true,
+      });
+    }
+
     throw createRequestError(
       errorData,
       response.status,
@@ -159,7 +167,7 @@ export function useFileFetching({
   }, [refreshKey, currentFolderId, queryClient]);
 
   const { data: historyData } = useQuery<FolderPathItem[], RequestError>({
-    queryKey: ["folderPath", currentFolderId, shareToken, locale],
+    queryKey: ["folderPath", currentFolderId, shareToken, locale, refreshKey],
     queryFn: () => fetchFolderPathApi(currentFolderId, shareToken, locale),
     enabled: !!currentFolderId && currentFolderId !== rootFolderId,
     initialData: initialFolderPath,
@@ -226,10 +234,10 @@ export function useFileFetching({
     FilesResponse,
     RequestError,
     InfiniteData<FilesResponse>,
-    readonly [string, string, string | null, string | undefined],
+    readonly [string, string, string | null, string | undefined, number],
     string | null
   >({
-    queryKey: ["files", currentFolderId, shareToken, bestToken],
+    queryKey: ["files", currentFolderId, shareToken, bestToken, refreshKey],
     queryFn: ({ pageParam }) =>
       fetchFilesApi({
         folderId: currentFolderId,
@@ -253,6 +261,7 @@ export function useFileFetching({
       if (
         requestError instanceof ProtectedError ||
         requestError.isProtected ||
+        requestError.isLocalAuthNeeded ||
         requestError.status === 401
       ) {
         return false;
@@ -273,7 +282,7 @@ export function useFileFetching({
 
   useEffect(() => {
     if (error) {
-      if (error.isProtected) {
+      if (error.isProtected || error.isLocalAuthNeeded) {
         return;
       }
 
@@ -296,7 +305,11 @@ export function useFileFetching({
         );
       }
 
-      if (error.status === 401 && !error.isProtected) {
+      if (
+        error.status === 401 &&
+        !error.isProtected &&
+        !error.isLocalAuthNeeded
+      ) {
         const currentUrl = new URL(window.location.href);
         router.push(
           `/login?callbackUrl=${encodeURIComponent(

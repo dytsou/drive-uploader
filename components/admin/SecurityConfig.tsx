@@ -1,13 +1,15 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useAppStore } from "@/lib/store";
-import { Loader2, EyeOff, UserX } from "lucide-react";
+import { Loader2, EyeOff, UserX, HardDrive, Save } from "lucide-react";
 
 export default function SecurityConfig() {
   const {
     hideAuthor,
     disableGuestLogin,
+    localStorageAuthEnabled,
+    localStoragePassword,
     isConfigLoading,
     fetchConfig,
     setConfig,
@@ -15,23 +17,66 @@ export default function SecurityConfig() {
     user,
   } = useAppStore();
 
+  const [localPw, setLocalPw] = useState("");
+
   useEffect(() => {
-    if (hideAuthor === null || disableGuestLogin === null) {
+    if (user?.role !== "ADMIN") return;
+    if (
+      hideAuthor === null ||
+      disableGuestLogin === null ||
+      localStorageAuthEnabled === null
+    ) {
       fetchConfig();
     }
-  }, [fetchConfig, hideAuthor, disableGuestLogin]);
+  }, [
+    fetchConfig,
+    hideAuthor,
+    disableGuestLogin,
+    localStorageAuthEnabled,
+    user,
+  ]);
+
+  useEffect(() => {
+    if (localStoragePassword !== null && localStoragePassword !== undefined) {
+      setLocalPw(localStoragePassword);
+    }
+  }, [localStoragePassword]);
 
   if (user?.role !== "ADMIN") return null;
 
   const handleToggle = async (
-    key: "hideAuthor" | "disableGuestLogin",
+    key: "hideAuthor" | "disableGuestLogin" | "localStorageAuthEnabled",
     value: boolean,
   ) => {
-    await setConfig({ [key]: value });
-    addToast({
-      message: "Pengaturan berhasil disimpan.",
-      type: "success",
-    });
+    try {
+      await setConfig({ [key]: value });
+      addToast({
+        message: `Pengaturan ${key} berhasil ${value ? "diaktifkan" : "dinonaktifkan"}.`,
+        type: "success",
+      });
+    } catch (err) {
+      addToast({
+        message: "Gagal menyimpan pengaturan.",
+        type: "error",
+      });
+    }
+  };
+
+  const handleSavePassword = async () => {
+    try {
+      if (!localPw) throw new Error("Password tidak boleh kosong.");
+      await setConfig({ localStoragePassword: localPw });
+      addToast({
+        message: "Password Local Storage berhasil disimpan.",
+        type: "success",
+      });
+    } catch (err) {
+      addToast({
+        message:
+          err instanceof Error ? err.message : "Gagal menyimpan password.",
+        type: "error",
+      });
+    }
   };
 
   return (
@@ -61,8 +106,9 @@ export default function SecurityConfig() {
               id="hideAuthor"
               type="checkbox"
               checked={hideAuthor || false}
+              disabled={isConfigLoading}
               onChange={(e) => handleToggle("hideAuthor", e.target.checked)}
-              className="ml-auto h-5 w-5 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
+              className="ml-auto h-5 w-5 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer disabled:opacity-50"
             />
           )}
         </div>
@@ -88,10 +134,11 @@ export default function SecurityConfig() {
               id="disableGuestLogin"
               type="checkbox"
               checked={disableGuestLogin || false}
+              disabled={isConfigLoading}
               onChange={(e) =>
                 handleToggle("disableGuestLogin", e.target.checked)
               }
-              className="ml-auto h-5 w-5 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
+              className="ml-auto h-5 w-5 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer disabled:opacity-50"
             />
           )}
         </div>

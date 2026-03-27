@@ -3,6 +3,10 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useAppStore } from "@/lib/store";
 import {
+  CheckCircle,
+  Clock,
+  Database,
+  HardDrive,
   Loader2,
   Trash2,
   ShieldPlus,
@@ -94,86 +98,162 @@ export default function ProtectedFoldersManager() {
 
   return (
     <>
-      <div>
-        <h2 className="text-2xl font-semibold mb-6">{t("title")}</h2>
-        <div className="bg-card border rounded-lg p-6 space-y-6">
-          <form onSubmit={handleAddFolder} className="space-y-4">
-            <h4 className="text-base font-medium">{t("addOrUpdate")}</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="relative">
-                <FolderInput className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                <input
-                  name="folderId"
-                  value={newFolder.folderId}
-                  onChange={handleInputChange}
-                  placeholder={t("folderIdPlaceholder")}
-                  required
-                  className="w-full pl-10 pr-4 py-2 rounded-lg border bg-transparent focus:ring-2 focus:ring-primary outline-none"
-                />
+      <div className="space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <h2 className="text-2xl font-bold flex items-center gap-2">
+            <ShieldPlus className="text-primary" /> {t("title")}
+          </h2>
+          <button
+            type="button"
+            onClick={() =>
+              setNewFolder({ folderId: "local-storage:", password: "" })
+            }
+            className="text-xs font-semibold bg-blue-500/10 text-blue-600 px-3 py-1.5 rounded-full border border-blue-500/20 hover:bg-blue-500/20 transition-all flex items-center gap-1.5"
+          >
+            <Lock size={12} /> Proteksi Root Local Storage
+          </button>
+        </div>
+
+        <div className="bg-card border rounded-2xl p-6 shadow-sm space-y-8">
+          <form onSubmit={handleAddFolder} className="space-y-6">
+            <div className="flex flex-col gap-1">
+              <h4 className="text-lg font-semibold">{t("addOrUpdate")}</h4>
+              <p className="text-xs text-muted-foreground">
+                Kunci folder Google Drive atau Local Storage dengan kata sandi.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="text-sm font-medium px-1">
+                  ID Folder atau Path
+                </label>
+                <div className="relative group">
+                  <FolderInput className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
+                  <input
+                    name="folderId"
+                    value={newFolder.folderId}
+                    onChange={handleInputChange}
+                    placeholder={t("folderIdPlaceholder")}
+                    required
+                    className="w-full pl-10 pr-4 py-3 rounded-xl border bg-background/50 focus:ring-2 focus:ring-primary focus:bg-background outline-none transition-all"
+                  />
+                </div>
               </div>
-              <div className="relative">
-                <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                <input
-                  name="password"
-                  value={newFolder.password}
-                  onChange={handleInputChange}
-                  placeholder={t("passwordPlaceholder")}
-                  required
-                  className="w-full pl-10 pr-4 py-2 rounded-lg border bg-transparent focus:ring-2 focus:ring-primary outline-none"
-                />
+              <div className="space-y-2">
+                <label className="text-sm font-medium px-1">
+                  Kata Sandi Baru
+                </label>
+                <div className="relative group">
+                  <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
+                  <input
+                    name="password"
+                    type="password"
+                    value={newFolder.password}
+                    onChange={handleInputChange}
+                    placeholder={t("passwordPlaceholder")}
+                    required
+                    className="w-full pl-10 pr-4 py-3 rounded-xl border bg-background/50 focus:ring-2 focus:ring-primary focus:bg-background outline-none transition-all"
+                  />
+                </div>
               </div>
             </div>
+
             <button
               type="submit"
               disabled={isSubmitting}
-              className="p-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:bg-primary/50 flex items-center gap-2"
+              className="w-full sm:w-auto px-6 py-3 bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 disabled:opacity-50 flex items-center justify-center gap-2 font-bold shadow-lg shadow-primary/20 transition-all active:scale-95"
             >
               {isSubmitting ? (
-                <Loader2 className="animate-spin" />
+                <Loader2 className="animate-spin" size={20} />
               ) : (
-                <ShieldPlus />
+                <ShieldPlus size={20} />
               )}
               <span>{isSubmitting ? t("saving") : t("saveProtection")}</span>
             </button>
           </form>
 
-          <div className="border-t pt-4 mt-4">
-            <h4 className="text-base font-medium mb-3">{t("protectedList")}</h4>
+          <div className="border-t pt-8">
+            <div className="flex items-center justify-between mb-6">
+              <h4 className="text-lg font-semibold">{t("protectedList")}</h4>
+              <span className="text-xs bg-muted px-2.5 py-1 rounded-full font-medium">
+                {Object.keys(folders).length} Folder
+              </span>
+            </div>
+
             {isLoading ? (
-              <div className="flex justify-center items-center h-24">
-                <Loader2 className="animate-spin text-muted-foreground" />
+              <div className="flex flex-col items-center justify-center py-12 gap-3">
+                <Loader2 className="animate-spin text-primary" size={32} />
+                <p className="text-sm text-muted-foreground animate-pulse">
+                  Menghubungkan ke database...
+                </p>
               </div>
             ) : Object.keys(folders).length === 0 ? (
-              <p className="text-sm text-muted-foreground italic">
-                {t("noProtected")}
-              </p>
+              <div className="text-center py-16 bg-muted/30 border border-dashed rounded-2xl">
+                <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4 opacity-50">
+                  <Lock size={24} />
+                </div>
+                <p className="text-sm text-muted-foreground font-medium">
+                  {t("noProtected")}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Gunakan form di atas untuk menambah folder pertama.
+                </p>
+              </div>
             ) : (
-              <ul className="grid gap-3 sm:grid-cols-2">
-                {Object.entries(folders).map(([folderId]) => (
-                  <li
-                    key={folderId}
-                    className="relative group overflow-hidden bg-gradient-to-br from-card to-muted/30 border rounded-xl p-4 transition-all hover:shadow-md hover:border-primary/30"
-                  >
-                    <div className="flex justify-between items-start mb-2">
-                      <div className="p-2 bg-amber-500/10 text-amber-600 rounded-lg">
-                        <FolderKey size={20} />
+              <ul className="grid gap-4 sm:grid-cols-2">
+                {Object.entries(folders).map(([folderId]) => {
+                  const isLocalStorage = folderId.startsWith("local-storage:");
+                  return (
+                    <motion.li
+                      key={folderId}
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="group relative overflow-hidden bg-card border rounded-2xl p-5 transition-all hover:shadow-xl hover:border-primary/50 flex flex-col gap-3"
+                    >
+                      <div className="flex justify-between items-start">
+                        <div
+                          className={`p-2.5 rounded-xl ${isLocalStorage ? "bg-blue-500/10 text-blue-600" : "bg-primary/10 text-primary"}`}
+                        >
+                          {isLocalStorage ? (
+                            <HardDrive size={20} />
+                          ) : (
+                            <FolderKey size={20} />
+                          )}
+                        </div>
+                        <button
+                          onClick={() => setFolderToDelete(folderId)}
+                          className="p-2 text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all"
+                          title={t("removeProtection")}
+                        >
+                          <Trash2 size={18} />
+                        </button>
                       </div>
-                      <button
-                        onClick={() => setFolderToDelete(folderId)}
-                        className="p-2 text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                        title={t("removeProtection")}
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                    <p className="font-mono text-xs font-semibold text-foreground break-all mb-1">
-                      {folderId}
-                    </p>
-                    <div className="flex items-center gap-1.5 text-xs text-green-600 font-medium bg-green-500/10 w-fit px-2 py-0.5 rounded-full">
-                      <Lock size={10} /> {t("securelyLocked")}
-                    </div>
-                  </li>
-                ))}
+
+                      <div className="space-y-1">
+                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                          {isLocalStorage
+                            ? "Penyimpanan Lokal"
+                            : "Google Drive ID"}
+                        </p>
+                        <p className="font-mono text-sm font-semibold truncate leading-none">
+                          {isLocalStorage
+                            ? folderId.replace("local-storage:", "/")
+                            : folderId}
+                        </p>
+                      </div>
+
+                      <div className="mt-2 flex items-center justify-between">
+                        <div className="flex items-center gap-1.5 text-[10px] sm:text-xs text-green-600 font-bold bg-green-500/10 w-fit px-3 py-1 rounded-full border border-green-500/20">
+                          <CheckCircle size={10} /> {t("securelyLocked")}
+                        </div>
+                        <span className="text-[10px] text-muted-foreground font-medium">
+                          Encrypted
+                        </span>
+                      </div>
+                    </motion.li>
+                  );
+                })}
               </ul>
             )}
           </div>

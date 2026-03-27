@@ -29,12 +29,23 @@ export const GET = createPublicRoute(
 
     const isAdmin = session?.user?.role === "ADMIN";
 
-    if (!isAdmin) {
-      if (!fileId.startsWith("local-storage:")) {
-        const isRestricted = await isAccessRestricted(fileId);
-        if (isRestricted) {
-          return NextResponse.json({ error: "Access Denied" }, { status: 403 });
-        }
+    if (fileId.startsWith("local-storage:") && !isAdmin) {
+      const hasAccess = await import("@/lib/auth").then((m) =>
+        m.checkLocalStorageAccess(request),
+      );
+      if (!hasAccess) {
+        return NextResponse.json(
+          {
+            error: "Autentikasi Local Storage diperlukan",
+            isLocalAuthNeeded: true,
+          },
+          { status: 401 },
+        );
+      }
+    } else if (!isAdmin) {
+      const isRestricted = await isAccessRestricted(fileId);
+      if (isRestricted) {
+        return NextResponse.json({ error: "Access Denied" }, { status: 403 });
       }
     }
 

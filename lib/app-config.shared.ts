@@ -26,6 +26,8 @@ export const appConfigSchema = z.object({
       message: "Primary color must be an empty string or a valid hex color.",
     })
     .default(""),
+  localStorageAuthEnabled: z.boolean().default(false),
+  localStoragePassword: z.string().default(""),
 });
 
 export const appConfigUpdateSchema = appConfigSchema.partial();
@@ -33,6 +35,7 @@ export const appConfigUpdateSchema = appConfigSchema.partial();
 export const publicAppConfigSchema = appConfigSchema.pick({
   disableGuestLogin: true,
   hideAuthor: true,
+  localStorageAuthEnabled: true,
 });
 
 export type AppConfig = z.infer<typeof appConfigSchema>;

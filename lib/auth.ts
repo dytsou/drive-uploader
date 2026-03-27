@@ -12,6 +12,33 @@ export function isPrivateFolder(folderId: string): boolean {
   return getPrivateFolderIds().includes(folderId.trim());
 }
 
+export async function checkLocalStorageAccess(
+  request: NextRequest,
+): Promise<boolean> {
+  const { getAppConfig } = await import("@/lib/app-config");
+  const config = await getAppConfig();
+
+  const dbProtected = await db.protectedFolder.findUnique({
+    where: { folderId: "local-storage:" },
+  });
+
+  const isProtected = config.localStorageAuthEnabled || !!dbProtected;
+  if (!isProtected) return true;
+
+  const cookie = request.cookies.get("local_storage_token");
+  if (!cookie) return false;
+
+  try {
+    const SECRET = new TextEncoder().encode(
+      process.env.NEXTAUTH_SECRET || "local-storage-secret-key-123",
+    );
+    await jwtVerify(cookie.value, SECRET);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export async function isProtected(folderId: string): Promise<boolean> {
   if (!folderId) return false;
 

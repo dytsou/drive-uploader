@@ -82,6 +82,10 @@ export function useFileBrowserController({
   const navigatingId = useAppStore((state) => state.navigatingId);
   const setNavigatingId = useAppStore((state) => state.setNavigatingId);
   const setCurrentFileId = useAppStore((state) => state.setCurrentFileId);
+  const checkLocalStorageAuth = useAppStore(
+    (state) => state.checkLocalStorageAuth,
+  );
+  const unlockLocalStorage = useAppStore((state) => state.unlockLocalStorage);
 
   const {
     files,
@@ -166,6 +170,10 @@ export function useFileBrowserController({
         );
       });
   }, [files, sort, favorites]);
+
+  useEffect(() => {
+    checkLocalStorageAuth();
+  }, [checkLocalStorageAuth]);
 
   useEffect(() => {
     if (sessionStatus === "authenticated" && !user) {
@@ -266,6 +274,20 @@ export function useFileBrowserController({
         message: getErrorMessage(error, t("wrongCredentials")),
         type: "error",
       });
+    } finally {
+      setIsAuthLoading(false);
+    }
+  };
+
+  const handleLocalAuthSubmit = async (password: string) => {
+    setIsAuthLoading(true);
+    try {
+      const success = await unlockLocalStorage(password);
+      if (success) {
+        addToast({ message: t("accessGranted"), type: "success" });
+        useAppStore.getState().triggerRefresh();
+      }
+      return success;
     } finally {
       setIsAuthLoading(false);
     }
@@ -504,6 +526,7 @@ export function useFileBrowserController({
       lockedFolderName: authTarget.folderName,
       lockedFolderId: authTarget.folderId,
       onAuthSubmit: handleAuthSubmit,
+      onLocalAuthSubmit: handleLocalAuthSubmit,
       isAuthLoading,
       readmeFile,
       sortedFiles,

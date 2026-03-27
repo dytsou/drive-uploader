@@ -32,8 +32,11 @@ export default function BrandingConfig() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    fetchConfig();
-  }, [fetchConfig]);
+    if (useAppStore.getState().user?.role !== "ADMIN") return;
+    if (appName === null || logoUrl === null || primaryColor === null) {
+      fetchConfig();
+    }
+  }, [fetchConfig, appName, logoUrl, primaryColor]);
 
   useEffect(() => {
     setFormState({

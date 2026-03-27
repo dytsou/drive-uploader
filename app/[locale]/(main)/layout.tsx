@@ -79,7 +79,7 @@ function MainLayoutContent({ children }: { children: React.ReactNode }) {
   const fetchDataUsage = useAppStore((state) => state.fetchDataUsage);
   const detailsFile = useAppStore((state) => state.detailsFile);
   const setDetailsFile = useAppStore((state) => state.setDetailsFile);
-  const fetchConfig = useAppStore((state) => state.fetchConfig);
+  const fetchPublicConfig = useAppStore((state) => state.fetchPublicConfig);
   const isSidebarOpen = useAppStore((state) => state.isSidebarOpen);
   const setSidebarOpen = useAppStore((state) => state.setSidebarOpen);
   const addToast = useAppStore((state) => state.addToast);
@@ -100,12 +100,12 @@ function MainLayoutContent({ children }: { children: React.ReactNode }) {
   const effectiveSidebarOpen = mounted ? isSidebarOpen : true;
 
   useEffect(() => {
-    fetchConfig();
+    fetchPublicConfig();
 
     if (status === "authenticated") {
       fetchUser();
     }
-  }, [status, fetchUser, fetchConfig, refreshKey]);
+  }, [status, fetchUser, fetchPublicConfig, refreshKey]);
 
   useEffect(() => {
     fetchDataUsage();

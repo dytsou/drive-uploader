@@ -70,6 +70,7 @@ export async function isAccessRestricted(
   visited: Set<string> = new Set(),
   accessCache: Map<string, boolean> = new Map(),
 ): Promise<boolean> {
+  const isLocalStorage = fileId.startsWith("local-storage:");
   if (depth >= maxDepth) {
     logger.error({ fileId, depth }, "Max depth reached for security check");
     return true;
@@ -83,7 +84,13 @@ export async function isAccessRestricted(
   const allRestrictedIds =
     preFetchedRestrictedIds || (await getRestrictedIds());
 
-  if (allRestrictedIds.length === 0) return false;
+  const { getAppConfig } = await import("@/lib/app-config");
+  const config = await getAppConfig();
+  const isLocalRestricted =
+    config.localStorageAuthEnabled ||
+    allRestrictedIds.includes("local-storage:");
+
+  if (allRestrictedIds.length === 0 && !isLocalRestricted) return false;
 
   async function checkAccess(id: string) {
     if (accessCache.has(id)) {
@@ -102,6 +109,22 @@ export async function isAccessRestricted(
   if (allRestrictedIds.includes(fileId)) {
     const access = await checkAccess(fileId);
     if (!access) return true;
+  }
+
+  if (isLocalStorage) {
+    if (isLocalRestricted) {
+      const access = await checkAccess("local-storage:");
+      if (!access) return true;
+    }
+    const parts = fileId.split("/");
+    for (let i = parts.length - 1; i >= 1; i--) {
+      const parentId = parts.slice(0, i).join("/");
+      if (allRestrictedIds.includes(parentId)) {
+        const access = await checkAccess(parentId);
+        if (!access) return true;
+      }
+    }
+    return false;
   }
 
   try {

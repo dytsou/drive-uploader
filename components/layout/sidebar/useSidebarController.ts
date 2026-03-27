@@ -114,7 +114,7 @@ export function useSidebarController() {
   useEffect(() => {
     const fetchDbDrives = async () => {
       try {
-        const response = await fetch("/api/admin/manual-drives");
+        const response = await fetch("/api/manual-drives");
         if (response.ok) {
           const data: ManualDrive[] = await response.json();
           setDbDrives(data);

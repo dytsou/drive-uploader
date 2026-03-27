@@ -2,11 +2,13 @@ export interface ErrorResponsePayload {
   error?: string;
   protected?: boolean;
   folderId?: string;
+  isLocalAuthNeeded?: boolean;
 }
 
 export interface RequestErrorOptions {
   status?: number;
   isProtected?: boolean;
+  isLocalAuthNeeded?: boolean;
   folderId?: string;
   cause?: unknown;
 }
@@ -14,6 +16,7 @@ export interface RequestErrorOptions {
 export class RequestError extends Error {
   status?: number;
   isProtected: boolean;
+  isLocalAuthNeeded: boolean;
   folderId?: string;
 
   constructor(message: string, options: RequestErrorOptions = {}) {
@@ -21,6 +24,7 @@ export class RequestError extends Error {
     this.name = "RequestError";
     this.status = options.status;
     this.isProtected = options.isProtected ?? false;
+    this.isLocalAuthNeeded = options.isLocalAuthNeeded ?? false;
     this.folderId = options.folderId;
     if (options.cause !== undefined) {
       this.cause = options.cause;

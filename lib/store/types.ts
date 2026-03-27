@@ -96,9 +96,12 @@ export interface UISlice {
   primaryColor: string;
   isConfigLoading: boolean;
   fetchConfig: () => Promise<void>;
+  fetchPublicConfig: () => Promise<void>;
   setConfig: (config: Partial<AppConfig>) => Promise<void>;
   hideAuthor: boolean | null;
   disableGuestLogin: boolean | null;
+  localStorageAuthEnabled: boolean | null;
+  localStoragePassword: string | null;
   isTheaterMode: boolean;
   toggleTheaterMode: () => void;
 }
@@ -116,6 +119,10 @@ export interface AuthSlice {
   fetchEditorEmails: () => Promise<void>;
   addEditorEmail: (email: string) => Promise<void>;
   removeEditorEmail: (email: string) => Promise<void>;
+  isLocalStorageUnlocked: boolean;
+  unlockLocalStorage: (password: string) => Promise<boolean>;
+  lockLocalStorage: () => Promise<boolean>;
+  checkLocalStorageAuth: () => void;
 }
 
 export interface FileSlice {

@@ -80,12 +80,14 @@ export const createUISlice: StateCreator<AppState, [], [], UISlice> = (
   isConfigLoading: false,
   hideAuthor: null,
   disableGuestLogin: null,
+  localStorageAuthEnabled: null,
+  localStoragePassword: null,
   fetchConfig: async () => {
     set({ isConfigLoading: true });
     try {
       const response = await fetch("/api/admin/config");
       if (!response.ok)
-        throw new Error(`Failed to fetch config: ${response.status}`);
+        throw new Error(`Failed to fetch admin config: ${response.status}`);
       const config: AppConfig = await response.json();
       set({
         hideAuthor: config.hideAuthor,
@@ -94,22 +96,34 @@ export const createUISlice: StateCreator<AppState, [], [], UISlice> = (
         logoUrl: config.logoUrl,
         faviconUrl: config.faviconUrl,
         primaryColor: config.primaryColor,
+        localStorageAuthEnabled: config.localStorageAuthEnabled,
+        localStoragePassword: config.localStoragePassword,
       });
     } catch (error) {
-      console.error("Config fetch error:", error);
-      set({
-        hideAuthor: DEFAULT_APP_CONFIG.hideAuthor,
-        disableGuestLogin: DEFAULT_APP_CONFIG.disableGuestLogin,
-        appName: DEFAULT_APP_CONFIG.appName,
-        logoUrl: DEFAULT_APP_CONFIG.logoUrl,
-        faviconUrl: DEFAULT_APP_CONFIG.faviconUrl,
-        primaryColor: DEFAULT_APP_CONFIG.primaryColor,
-      });
+      console.error("Admin config fetch error:", error);
     } finally {
       set({ isConfigLoading: false });
     }
   },
+  fetchPublicConfig: async () => {
+    try {
+      const response = await fetch("/api/config");
+      if (!response.ok)
+        throw new Error(`Failed to fetch public config: ${response.status}`);
+      const config = await response.json();
+      set({
+        appName: config.appName || DEFAULT_APP_CONFIG.appName,
+        logoUrl: config.logoUrl || DEFAULT_APP_CONFIG.logoUrl,
+        faviconUrl: config.faviconUrl || DEFAULT_APP_CONFIG.faviconUrl,
+        primaryColor: config.primaryColor || DEFAULT_APP_CONFIG.primaryColor,
+        hideAuthor: config.hideAuthor ?? DEFAULT_APP_CONFIG.hideAuthor,
+      });
+    } catch (error) {
+      console.error("Public config fetch error:", error);
+    }
+  },
   setConfig: async (config: Partial<AppConfig>) => {
+    set({ isConfigLoading: true });
     try {
       const response = await fetch("/api/admin/config", {
         method: "POST",
@@ -121,12 +135,26 @@ export const createUISlice: StateCreator<AppState, [], [], UISlice> = (
         throw new Error(result.error || `Update failed: ${response.status}`);
       }
       const result = await response.json();
-      set((state: AppState) => ({ ...state, ...result.config }));
+      const updatedConfig = result.config as AppConfig;
+
+      set({
+        hideAuthor: updatedConfig.hideAuthor,
+        disableGuestLogin: updatedConfig.disableGuestLogin,
+        appName: updatedConfig.appName,
+        logoUrl: updatedConfig.logoUrl,
+        faviconUrl: updatedConfig.faviconUrl,
+        primaryColor: updatedConfig.primaryColor,
+        localStorageAuthEnabled: updatedConfig.localStorageAuthEnabled,
+        localStoragePassword: updatedConfig.localStoragePassword,
+      });
     } catch (error: unknown) {
+      console.error("Config update error:", error);
       get().addToast({
         message: getErrorMessage(error, "Error updating config"),
         type: "error",
       });
+    } finally {
+      set({ isConfigLoading: false });
     }
   },
   isTheaterMode: false,

@@ -135,7 +135,18 @@ export async function validateDownloadRequest(request: NextRequest): Promise<{
 
   const userRole = session?.user?.role;
 
-  if (userRole !== "ADMIN") {
+  if (fileId.startsWith("local-storage:") && userRole !== "ADMIN") {
+    const hasAccess = await import("@/lib/auth").then((m) =>
+      m.checkLocalStorageAccess(request),
+    );
+    if (!hasAccess) {
+      return {
+        context: createEmptyDownloadContext(),
+        session,
+        error: { error: "Autentikasi Local Storage diperlukan", status: 401 },
+      };
+    }
+  } else if (userRole !== "ADMIN") {
     const isRestricted = await isAccessRestricted(
       fileId,
       [],

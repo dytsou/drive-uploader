@@ -24,7 +24,9 @@ export const GET = createAdminRoute(async () => {
 export const POST = createAdminRoute(
   async ({ body }) => {
     try {
+      console.log("[Admin Config] Update request:", body);
       const updatedConfig = await updateAppConfig(body);
+      console.log("[Admin Config] New config saved:", updatedConfig);
 
       return NextResponse.json({
         message: "Config updated",

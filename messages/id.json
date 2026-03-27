@@ -732,7 +732,7 @@
   "ProtectedFoldersManager": {
     "title": "Manajemen Folder Terproteksi",
     "addOrUpdate": "Tambah atau Perbarui Folder",
-    "folderIdPlaceholder": "ID Folder Google Drive",
+    "folderIdPlaceholder": "ID Folder Google Drive atau path lokal",
     "passwordPlaceholder": "Kata Sandi Baru",
     "saving": "Menyimpan...",
     "saveProtection": "Simpan Perlindungan",
