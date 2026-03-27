@@ -17,7 +17,15 @@ export default function MobileBottomNav() {
 
   const navItems = [
     { label: t("home"), icon: Home, path: "/" },
-    { label: t("local"), icon: Server, path: "/folder/local-storage%3A" },
+    ...(process.env.NEXT_PUBLIC_ENABLE_LOCAL_STORAGE === "true"
+      ? [
+          {
+            label: process.env.NEXT_PUBLIC_LOCAL_STORAGE_NAME || t("local"),
+            icon: Server,
+            path: "/folder/local-storage%3A",
+          },
+        ]
+      : []),
     { label: t("favorites"), icon: Star, path: "/favorites" },
     { label: t("storage"), icon: HardDrive, path: "/storage" },
   ];

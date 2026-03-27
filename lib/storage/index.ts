@@ -13,7 +13,9 @@ export async function listAllFiles(
 
   if (folderId === "virtual-root") {
     const driveRoot = process.env.NEXT_PUBLIC_ROOT_FOLDER_ID || "";
-    const localEnabled = !!process.env.LOCAL_STORAGE_PATH;
+    const localEnabled =
+      process.env.NEXT_PUBLIC_ENABLE_LOCAL_STORAGE === "true" &&
+      !!process.env.LOCAL_STORAGE_PATH;
 
     const files: ZeeFile[] = [];
 
@@ -32,7 +34,7 @@ export async function listAllFiles(
     if (localEnabled) {
       files.push({
         id: "local-storage:",
-        name: "Local Storage",
+        name: process.env.NEXT_PUBLIC_LOCAL_STORAGE_NAME || "Local Storage",
         mimeType: "application/vnd.google-apps.folder",
         isFolder: true,
         source: "local",
@@ -45,6 +47,9 @@ export async function listAllFiles(
   }
 
   if (folderId.startsWith("local-storage:")) {
+    if (process.env.NEXT_PUBLIC_ENABLE_LOCAL_STORAGE !== "true") {
+      return { files: [], nextPageToken: null };
+    }
     const localPath = folderId.replace("local-storage:", "");
     return listLocalFiles(localPath);
   }
@@ -74,6 +79,9 @@ export async function getAnyFileDetails(
     `[Storage] getAnyFileDetails called with: ${fileId} (cleaned: ${cleanId})`,
   );
   if (cleanId.startsWith("local-storage:")) {
+    if (process.env.NEXT_PUBLIC_ENABLE_LOCAL_STORAGE !== "true") {
+      return null;
+    }
     const localPath = cleanId.replace("local-storage:", "");
     console.log(`[Storage] Fetching local file: ${localPath} (ID: ${cleanId})`);
     return getLocalFileDetails(localPath);

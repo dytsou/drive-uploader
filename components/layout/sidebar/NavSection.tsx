@@ -52,21 +52,23 @@ export default function NavSection({ t }: NavSectionProps) {
       </button>
 
       {/* Local Storage Folder */}
-      <button
-        onClick={() => handleNav("local", "/folder/local-storage%3A")}
-        id="sidebar-nav-local"
-        className={cn(
-          "w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md hover:bg-accent/50 transition-colors",
-          pathname.includes("local") && "bg-accent font-medium text-primary",
-        )}
-      >
-        {navigatingId === "local" ? (
-          <Loader2 size={16} className="animate-spin" />
-        ) : (
-          <Server size={16} />
-        )}{" "}
-        {t("localCloud")}
-      </button>
+      {process.env.NEXT_PUBLIC_ENABLE_LOCAL_STORAGE === "true" && (
+        <button
+          onClick={() => handleNav("local", "/folder/local-storage%3A")}
+          id="sidebar-nav-local"
+          className={cn(
+            "w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md hover:bg-accent/50 transition-colors",
+            pathname.includes("local") && "bg-accent font-medium text-primary",
+          )}
+        >
+          {navigatingId === "local" ? (
+            <Loader2 size={16} className="animate-spin" />
+          ) : (
+            <Server size={16} />
+          )}{" "}
+          {process.env.NEXT_PUBLIC_LOCAL_STORAGE_NAME || t("localCloud")}
+        </button>
+      )}
       <button
         onClick={() => handleNav("favorites", "/favorites")}
         id="sidebar-nav-favorites"
