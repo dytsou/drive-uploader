@@ -1,5 +1,5 @@
 import FileBrowser from "@/components/file-browser/FileBrowser";
-import { getFolderPath, listFilesFromDrive } from "@/lib/drive";
+import { getFolderPath } from "@/lib/drive";
 import { listAllFiles } from "@/lib/storage";
 import { ZeeFile } from "@/types/storage";
 import { isProtected } from "@/lib/auth";

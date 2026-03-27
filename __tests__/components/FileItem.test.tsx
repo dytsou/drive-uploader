@@ -155,6 +155,7 @@ describe("FileItem", () => {
     webViewLink: "https://drive.google.com/file/d/file-123",
     trashed: false,
     isFavorite: false,
+    source: "google-drive" as const,
   };
 
   const defaultProps = {

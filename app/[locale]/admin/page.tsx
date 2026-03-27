@@ -134,7 +134,17 @@ export default function AdminPage() {
         })
         .finally(() => setIsLoadingStats(false));
     }
-  }, [status]);
+  }, [
+    status,
+    user,
+    fetchUser,
+    fetchShareLinks,
+    fetchFileRequests,
+    fetchAdminEmails,
+    fetchEditorEmails,
+    addToast,
+    t,
+  ]);
 
   const { expiredLinks } = useMemo(() => {
     const now = new Date();

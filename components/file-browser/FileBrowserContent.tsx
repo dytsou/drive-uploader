@@ -9,7 +9,7 @@ import PinnedSection from "@/components/file-browser/PinnedSection";
 import AuthForm from "@/components/features/AuthForm";
 import LocalStorageAuthForm from "@/components/features/LocalStorageAuthForm";
 import SetupRequired from "@/components/file-browser/SetupRequired";
-import { Lock, ShieldAlert } from "lucide-react";
+import { ShieldAlert } from "lucide-react";
 import type { DriveFile } from "@/lib/drive";
 import { useKeyboardNavigation } from "@/hooks/useKeyboardNavigation";
 import { useAppStore } from "@/lib/store";
@@ -164,9 +164,9 @@ export default function FileBrowserContent(props: FileBrowserContentProps) {
 
     if (isCriticalAuthError) {
       return (
-        <SetupRequired 
-          message={error.message} 
-          type={error.message.includes("kadaluarsa") ? "expired" : "config"} 
+        <SetupRequired
+          message={error.message}
+          type={error.message.includes("kadaluarsa") ? "expired" : "config"}
         />
       );
     }

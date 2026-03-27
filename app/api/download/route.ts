@@ -30,9 +30,7 @@ async function handleDownload(request: NextRequest) {
     logger.info({ fileId }, "[Download] Starting download");
 
     if (fileId.startsWith("local-storage:")) {
-      const { getLocalFilePath, getLocalFileDetails } = await import(
-        "@/lib/storage/local"
-      );
+      const { getLocalFilePath } = await import("@/lib/storage/local");
       const { getMimeType } = await import("@/lib/storage/mime");
       const { createReadStream } = await import("fs");
       const { stat } = await import("fs/promises");

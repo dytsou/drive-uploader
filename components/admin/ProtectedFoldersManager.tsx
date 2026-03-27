@@ -4,8 +4,6 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useAppStore } from "@/lib/store";
 import {
   CheckCircle,
-  Clock,
-  Database,
   HardDrive,
   Loader2,
   Trash2,

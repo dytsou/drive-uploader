@@ -2,22 +2,19 @@
 
 import React, { useEffect, useState } from "react";
 import { useAppStore } from "@/lib/store";
-import { Loader2, EyeOff, UserX, HardDrive, Save } from "lucide-react";
+import { Loader2, EyeOff, UserX } from "lucide-react";
 
 export default function SecurityConfig() {
   const {
     hideAuthor,
     disableGuestLogin,
     localStorageAuthEnabled,
-    localStoragePassword,
     isConfigLoading,
     fetchConfig,
     setConfig,
     addToast,
     user,
   } = useAppStore();
-
-  const [localPw, setLocalPw] = useState("");
 
   useEffect(() => {
     if (user?.role !== "ADMIN") return;
@@ -36,12 +33,6 @@ export default function SecurityConfig() {
     user,
   ]);
 
-  useEffect(() => {
-    if (localStoragePassword !== null && localStoragePassword !== undefined) {
-      setLocalPw(localStoragePassword);
-    }
-  }, [localStoragePassword]);
-
   if (user?.role !== "ADMIN") return null;
 
   const handleToggle = async (
@@ -54,26 +45,9 @@ export default function SecurityConfig() {
         message: `Pengaturan ${key} berhasil ${value ? "diaktifkan" : "dinonaktifkan"}.`,
         type: "success",
       });
-    } catch (err) {
+    } catch {
       addToast({
         message: "Gagal menyimpan pengaturan.",
-        type: "error",
-      });
-    }
-  };
-
-  const handleSavePassword = async () => {
-    try {
-      if (!localPw) throw new Error("Password tidak boleh kosong.");
-      await setConfig({ localStoragePassword: localPw });
-      addToast({
-        message: "Password Local Storage berhasil disimpan.",
-        type: "success",
-      });
-    } catch (err) {
-      addToast({
-        message:
-          err instanceof Error ? err.message : "Gagal menyimpan password.",
         type: "error",
       });
     }
