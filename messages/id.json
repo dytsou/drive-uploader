@@ -444,7 +444,7 @@
     "incompleteInput": "Input Tidak Lengkap",
     "setupSuccessRestart": "Setup Berhasil! Token telah disimpan ke .env.\n\nServer akan dimatikan otomatis atau silakan restart manual.",
     "setupComplete": "Setup Selesai",
-    "setupSuccessRedirect": "Setup Berhasil! Mengalihkan ke beranda...",
+    "setupSuccessRedirect": "Setup berhasil disimpan ke .env! Simpan nilai ini sebagai cadangan jika diperlukan.",
     "success": "Sukses",
     "setupFailed": "Setup Gagal",
     "connectionError": "Terjadi kesalahan koneksi.",
@@ -460,7 +460,13 @@
     "authSuccessMessage": "Kode otorisasi telah diterima. Klik tombol di bawah untuk menyelesaikan proses setup.",
     "processDescription": "Proses ini akan menukar kode otorisasi dengan token akses dan menyimpannya ke database serta file .env.",
     "processing": "Memproses...",
-    "finishSetup": "Selesaikan Setup"
+    "finishSetup": "Selesaikan Setup",
+    "manualConfigTitle": "Ringkasan Konfigurasi",
+    "manualConfigDesc": "Gagal menulis ke .env secara otomatis. Silakan salin nilai berikut ke file .env Anda secara manual.",
+    "copy": "Salin",
+    "understand": "Paham, Kembali ke Beranda",
+    "refreshToken": "Refresh Token",
+    "envNote": "Salin semua variabel di bawah ini dan tambahkan ke file .env Anda, lalu restart container/VPS jika perlu."
   },
   "DetailsPanel": {
     "copied": "Disalin!",

@@ -444,7 +444,7 @@
     "incompleteInput": "Incomplete Input",
     "setupSuccessRestart": "Setup Successful! Token saved to .env.\n\nServer will shutdown automatically or please restart manually.",
     "setupComplete": "Setup Complete",
-    "setupSuccessRedirect": "Setup Successful! Redirecting to home...",
+    "setupSuccessRedirect": "Setup saved to .env! Copy these values as backup if needed.",
     "success": "Success",
     "setupFailed": "Setup Failed",
     "connectionError": "Connection error occurred.",
@@ -460,7 +460,13 @@
     "authSuccessMessage": "Authorization code received. Click the button below to complete the setup process.",
     "processDescription": "This process will exchange the authorization code for an access token and save it to the database and .env file.",
     "processing": "Processing...",
-    "finishSetup": "Finish Setup"
+    "finishSetup": "Finish Setup",
+    "manualConfigTitle": "Configuration Summary",
+    "manualConfigDesc": "Failed to write to .env automatically. Please copy the following values manually to your .env file.",
+    "copy": "Copy",
+    "understand": "Understood, Back to Home",
+    "refreshToken": "Refresh Token",
+    "envNote": "Copy all variables below and add them to your .env file, then restart the container/VPS if needed."
   },
   "DetailsPanel": {
     "copied": "Copied!",

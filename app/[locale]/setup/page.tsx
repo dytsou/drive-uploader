@@ -11,7 +11,11 @@ export default function SetupPage() {
   const t = useTranslations("SetupPage");
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
-  const [manualConfig, setManualConfig] = useState<Record<string, string> | null>(null);
+  const [manualConfig, setManualConfig] = useState<Record<
+    string,
+    string
+  > | null>(null);
+  const [writeSuccess, setWriteSuccess] = useState(false);
   const [formData, setFormData] = useState({
     clientId: "",
     clientSecret: "",
@@ -69,17 +73,9 @@ export default function SetupPage() {
 
       if (res.ok) {
         localStorage.removeItem("zee_setup_temp");
-        if (data.manualConfigNeeded) {
-          setManualConfig(data.manualConfigData);
-          setStep(3);
-        } else if (data.restartNeeded) {
-          await alert(t("setupSuccessRestart"), { title: t("setupComplete") });
-        } else {
-          await alert(t("setupSuccessRedirect"), {
-            title: t("success"),
-          });
-          router.push("/");
-        }
+        setManualConfig(data.manualConfigData);
+        setWriteSuccess(data.restartNeeded);
+        setStep(3);
       } else {
         await alert(`${t("setupFailed")}: ${data.error}`, {
           title: t("setupFailed"),
@@ -295,28 +291,109 @@ export default function SetupPage() {
           ) : step === 3 && manualConfig ? (
             <div className="space-y-8">
               <div className="flex flex-col items-center text-center">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center mb-6 shadow-lg shadow-yellow-500/30">
-                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                  </svg>
+                <div
+                  className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${writeSuccess ? "from-green-400 to-green-600 shadow-green-500/30" : "from-yellow-400 to-yellow-600 shadow-yellow-500/30"} flex items-center justify-center mb-6 shadow-lg`}
+                >
+                  {writeSuccess ? (
+                    <svg
+                      className="w-8 h-8 text-white"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2.5}
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                  ) : (
+                    <svg
+                      className="w-8 h-8 text-white"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2.5}
+                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                      />
+                    </svg>
+                  )}
                 </div>
-                <h1 className="text-2xl font-semibold mb-2">Konfigurasi Manual</h1>
+                <h1 className="text-2xl font-semibold mb-2">
+                  {t("manualConfigTitle")}
+                </h1>
                 <p className="text-muted-foreground max-w-sm">
-                  Gagal menulis ke <code className="bg-muted px-1 py-0.5 rounded">.env</code> secara otomatis. Silakan salin nilai berikut dan tambahkan ke <code className="bg-muted px-1 py-0.5 rounded">.env</code> Anda secara manual, lalu <strong className="text-foreground">restart aplikasi</strong>.
+                  {writeSuccess
+                    ? t("setupSuccessRedirect")
+                    : t("manualConfigDesc")}
                 </p>
               </div>
 
-              <div className="bg-muted/50 p-4 rounded-xl border border-border/50 relative">
-                <pre className="text-xs overflow-x-auto whitespace-pre-wrap font-mono text-muted-foreground select-all">
-                  {`GOOGLE_CLIENT_ID="${manualConfig.GOOGLE_CLIENT_ID}"\nGOOGLE_CLIENT_SECRET="${manualConfig.GOOGLE_CLIENT_SECRET}"\nGOOGLE_REFRESH_TOKEN="${manualConfig.GOOGLE_REFRESH_TOKEN}"\nNEXT_PUBLIC_ROOT_FOLDER_ID="${manualConfig.NEXT_PUBLIC_ROOT_FOLDER_ID}"`}
-                </pre>
+              <div className="space-y-4">
+                {[
+                  {
+                    label: t("clientId"),
+                    value: manualConfig.GOOGLE_CLIENT_ID,
+                    key: "GOOGLE_CLIENT_ID",
+                  },
+                  {
+                    label: t("clientSecret"),
+                    value: manualConfig.GOOGLE_CLIENT_SECRET,
+                    key: "GOOGLE_CLIENT_SECRET",
+                  },
+                  {
+                    label: t("refreshToken"),
+                    value: manualConfig.GOOGLE_REFRESH_TOKEN,
+                    key: "GOOGLE_REFRESH_TOKEN",
+                  },
+                  {
+                    label: t("rootFolderId"),
+                    value: manualConfig.NEXT_PUBLIC_ROOT_FOLDER_ID,
+                    key: "NEXT_PUBLIC_ROOT_FOLDER_ID",
+                  },
+                ].map((item) => (
+                  <div key={item.key} className="space-y-2">
+                    <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      {item.label}
+                    </label>
+                    <div className="relative group">
+                      <input
+                        readOnly
+                        value={item.value}
+                        className="w-full px-4 py-3 pr-20 rounded-xl border border-border bg-muted/30 font-mono text-xs focus:outline-none"
+                      />
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(item.value);
+                          alert(t("copied"), { title: t("success") });
+                        }}
+                        className="absolute right-2 top-1.5 px-3 py-1.5 rounded-lg bg-background border border-border text-xs font-medium hover:bg-muted transition-colors"
+                      >
+                        {t("copy")}
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
+
+              {!writeSuccess && (
+                <div className="p-4 rounded-xl bg-blue-500/5 border border-blue-500/10">
+                  <p className="text-xs text-blue-500/80 leading-relaxed italic">
+                    * {t("envNote")}
+                  </p>
+                </div>
+              )}
 
               <button
                 onClick={() => router.push("/")}
                 className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-6 py-3.5 rounded-xl font-medium transition-all shadow-lg shadow-blue-500/25 flex items-center justify-center gap-2"
               >
-                Paham, Kembali ke Beranda
+                {t("understand")}
               </button>
             </div>
           ) : null}
