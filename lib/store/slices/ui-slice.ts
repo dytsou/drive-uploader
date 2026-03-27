@@ -33,6 +33,13 @@ export const createUISlice: StateCreator<AppState, [], [], UISlice> = (
   setSidebarOpen: (isOpen: boolean) => set({ isSidebarOpen: isOpen }),
   toasts: [],
   addToast: (toastDetails: Omit<Toast, "id">) => {
+    const currentToasts = get().toasts;
+    const isDuplicate = currentToasts.some(
+      (t) => t.message === toastDetails.message && t.type === toastDetails.type,
+    );
+
+    if (isDuplicate) return;
+
     const id = crypto.randomUUID();
     const newToast = { ...toastDetails, id };
     const newNotification: NotificationItem = {
