@@ -61,6 +61,8 @@ export function useSidebarController() {
   const user = useAppStore((state) => state.user);
   const shareToken = useAppStore((state) => state.shareToken);
   const setNavigatingId = useAppStore((state) => state.setNavigatingId);
+  const isAuthHealthy = useAppStore((state) => state.isGoogleAuthHealthy);
+  const setAuthHealth = useAppStore((state) => state.setGoogleAuthHealth);
 
   const [mounted, setMounted] = useState(false);
   const [dbDrives, setDbDrives] = useState<ManualDrive[]>([]);
@@ -112,35 +114,54 @@ export function useSidebarController() {
   }, [pathname, setNavigatingId]);
 
   useEffect(() => {
-    const fetchDbDrives = async () => {
+    const fetchAuthAndDrives = async () => {
       try {
-        const response = await fetch("/api/manual-drives");
-        if (response.ok) {
-          const data: ManualDrive[] = await response.json();
+        const [drivesRes, authRes] = await Promise.all([
+          fetch("/api/manual-drives"),
+          fetch("/api/auth/status"),
+        ]);
+
+        const authData = await authRes.json();
+
+        if (authData.status !== "healthy") {
+          setAuthHealth(false, authData.error || t("googleAuthError"));
+          setTree({});
+          setDbDrives([]);
+
+          if (authData.status === "unhealthy" || authData.status === "not_configured") {
+            useAppStore.getState().addToast({
+              message: authData.error || t("googleAuthError"),
+              type: "error",
+            });
+          }
+          return;
+        }
+
+        setAuthHealth(true);
+        if (drivesRes.ok) {
+          const data: ManualDrive[] = await drivesRes.json();
           setDbDrives(data);
-        } else if (response.status === 401) {
-          console.error(
-            "Unauthorized to fetch manual drives - session may have expired",
-          );
         }
       } catch (error) {
-        console.error("Error fetching DB drives:", error);
+        console.error("Error checking auth or drives:", error);
       }
     };
 
     if (mounted) {
-      fetchDbDrives();
+      fetchAuthAndDrives();
     }
-  }, [mounted]);
+  }, [mounted, t]);
 
   const allManualDrives = useMemo<ManualDrive[]>(() => {
+    if (!isAuthHealthy) return [];
+
     const envDrives = parseEnvManualDrives(
       process.env.NEXT_PUBLIC_MANUAL_DRIVES || "",
     );
     const dbIds = new Set(dbDrives.map((drive) => drive.id));
     const filteredEnvDrives = envDrives.filter((drive) => !dbIds.has(drive.id));
     return [...filteredEnvDrives, ...dbDrives];
-  }, [dbDrives]);
+  }, [dbDrives, isAuthHealthy]);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -238,7 +259,7 @@ export function useSidebarController() {
   );
 
   useEffect(() => {
-    if (!mounted) {
+    if (!mounted || !isAuthHealthy) {
       return;
     }
 
@@ -412,7 +433,7 @@ export function useSidebarController() {
 
   const treeContextValue = useMemo<TreeContextType>(
     () => ({
-      tree,
+      tree: isAuthHealthy ? tree : {},
       onToggle: toggleNode,
       onNavigate,
       onDrop,

@@ -8,9 +8,11 @@ import FolderReadme from "@/components/file-browser/FolderReadme";
 import PinnedSection from "@/components/file-browser/PinnedSection";
 import AuthForm from "@/components/features/AuthForm";
 import LocalStorageAuthForm from "@/components/features/LocalStorageAuthForm";
-import { Lock } from "lucide-react";
+import SetupRequired from "@/components/file-browser/SetupRequired";
+import { Lock, ShieldAlert } from "lucide-react";
 import type { DriveFile } from "@/lib/drive";
 import { useKeyboardNavigation } from "@/hooks/useKeyboardNavigation";
+import { useAppStore } from "@/lib/store";
 import type { RequestError } from "@/lib/errors";
 import type {
   BrowserFile,
@@ -88,6 +90,9 @@ export default function FileBrowserContent(props: FileBrowserContentProps) {
     error,
   } = props;
 
+  const isGoogleAuthHealthy = useAppStore((state) => state.isGoogleAuthHealthy);
+  const googleAuthError = useAppStore((state) => state.googleAuthError);
+
   const t = useTranslations("FileBrowser");
   const tList = useTranslations("FileList");
 
@@ -112,15 +117,31 @@ export default function FileBrowserContent(props: FileBrowserContentProps) {
   if (isLoading || (sessionStatus === "loading" && !shareToken)) {
     return <FileBrowserLoading />;
   }
+  if (!isGoogleAuthHealthy) {
+    return (
+      <SetupRequired
+        message={googleAuthError || undefined}
+        type={googleAuthError?.includes("kadaluarsa") ? "expired" : "config"}
+      />
+    );
+  }
+
   if (isLocked) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-10rem)] w-full animate-in fade-in duration-500">
-        <AuthForm
-          folderId={lockedFolderId}
-          folderName={lockedFolderName || t("lockedFolder")}
-          isLoading={isAuthLoading}
-          onSubmit={onAuthSubmit}
-        />
+      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-12rem)] w-full">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.3 }}
+          className="w-full max-w-sm"
+        >
+          <AuthForm
+            folderName={lockedFolderName || t("lockedFolder")}
+            folderId={lockedFolderId}
+            onSubmit={onAuthSubmit}
+            isLoading={isAuthLoading}
+          />
+        </motion.div>
       </div>
     );
   }
@@ -137,10 +158,23 @@ export default function FileBrowserContent(props: FileBrowserContentProps) {
   }
 
   if (error && !isLocked && !error.isProtected) {
+    const isCriticalAuthError =
+      error.message.includes("Sesi Google Drive kadaluarsa") ||
+      error.message.includes("Aplikasi belum dikonfigurasi");
+
+    if (isCriticalAuthError) {
+      return (
+        <SetupRequired 
+          message={error.message} 
+          type={error.message.includes("kadaluarsa") ? "expired" : "config"} 
+        />
+      );
+    }
+
     return (
       <div className="flex flex-col items-center justify-center py-20 text-muted-foreground w-full gap-4">
         <div className="p-4 bg-destructive/10 rounded-full text-destructive">
-          <Lock className="w-8 h-8" />
+          <ShieldAlert className="w-8 h-8" />
         </div>
         <div className="text-center">
           <h3 className="text-lg font-semibold text-foreground">

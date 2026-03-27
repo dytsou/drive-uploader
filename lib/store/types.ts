@@ -123,6 +123,9 @@ export interface AuthSlice {
   unlockLocalStorage: (password: string) => Promise<boolean>;
   lockLocalStorage: () => Promise<boolean>;
   checkLocalStorageAuth: () => void;
+  isGoogleAuthHealthy: boolean;
+  googleAuthError: string | null;
+  setGoogleAuthHealth: (isHealthy: boolean, error?: string | null) => void;
 }
 
 export interface FileSlice {

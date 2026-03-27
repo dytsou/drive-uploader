@@ -183,4 +183,9 @@ export const createAuthSlice: StateCreator<AppState, [], [], AuthSlice> = (
       set({ isLocalStorageUnlocked: false });
     }
   },
+  isGoogleAuthHealthy: true,
+  googleAuthError: null,
+  setGoogleAuthHealth: (isHealthy: boolean, error: string | null = null) => {
+    set({ isGoogleAuthHealthy: isHealthy, googleAuthError: error });
+  },
 });

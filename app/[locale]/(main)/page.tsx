@@ -3,7 +3,7 @@ import { listAllFiles } from "@/lib/storage";
 import { ZeeFile } from "@/types/storage";
 import { getRootFolderId } from "@/lib/config";
 
-export const revalidate = 3600;
+export const dynamic = "force-dynamic";
 
 type ProtectedFolderMap = Record<string, boolean>;
 

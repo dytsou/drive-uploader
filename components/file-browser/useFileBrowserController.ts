@@ -466,7 +466,13 @@ export function useFileBrowserController({
     router.push(folderUrl);
   };
 
-  const isLockedImmediate = !!authModalInfo || authTarget.isLocked;
+  const isCriticalAuthError = !!(
+    error?.message.includes("Sesi Google Drive kadaluarsa") ||
+    error?.message.includes("Aplikasi belum dikonfigurasi")
+  );
+
+  const isLockedImmediate =
+    !!authModalInfo || authTarget.isLocked || isCriticalAuthError;
   const shouldShowHeader = !isLockedImmediate && (!isLoading || refreshKey > 0);
 
   return {

@@ -198,12 +198,11 @@ export const GET = createPublicRoute(
 
       return NextResponse.json(
         {
-          error: "Terjadi kesalahan internal pada server.",
-          details: requestError.message,
+          error: requestError.message,
           protected: requestError.isProtected,
           folderId: requestError.folderId,
         },
-        { status: requestError.isProtected ? 401 : 500 },
+        { status: requestError.status || (requestError.isProtected ? 401 : 500) },
       );
     }
   },

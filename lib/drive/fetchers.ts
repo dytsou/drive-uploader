@@ -23,6 +23,13 @@ import {
   parseManualDriveRecords,
   parseManualDrivesFromEnv,
 } from "@/lib/manual-drives";
+import { getAppCredentials } from "@/lib/config";
+
+async function getCredentialHash(): Promise<string> {
+  const creds = await getAppCredentials();
+  if (!creds || !creds.refreshToken) return "default";
+  return creds.refreshToken.slice(-10);
+}
 
 export async function listSharedDrives(): Promise<SharedDrive[]> {
   const accessToken = await getAccessToken();
@@ -67,7 +74,8 @@ export async function getAllDescendantFolders(
   accessToken: string,
   rootFolderId: string,
 ): Promise<string[]> {
-  const cacheKey = `${REDIS_KEYS.FOLDER_TREE}${rootFolderId}`;
+  const credHash = await getCredentialHash();
+  const cacheKey = `${REDIS_KEYS.FOLDER_TREE}${credHash}:${rootFolderId}`;
   try {
     const cachedTree: string[] | null = await kv.get(cacheKey);
     if (cachedTree) {
@@ -145,7 +153,8 @@ export async function listFilesFromDrive(
   pageSize: number = 50,
   useCache: boolean = true,
 ) {
-  const cacheKey = `${REDIS_KEYS.FOLDER_CONTENT}${folderId}:${pageToken || "first"}`;
+  const credHash = await getCredentialHash();
+  const cacheKey = `${REDIS_KEYS.FOLDER_CONTENT}${credHash}:${folderId}:${pageToken || "first"}`;
   const memoryCacheKey = `${MEMORY_CACHE_KEYS.FOLDER_CONTENT}${folderId}:${pageToken || "first"}`;
 
   const fetcher = async () => {
@@ -234,7 +243,8 @@ export async function listFilesFromDrive(
 export async function getFileDetailsFromDrive(
   fileId: string,
 ): Promise<DriveFile | null> {
-  const cacheKey = `${REDIS_KEYS.FILE_DETAILS}${fileId}`;
+  const credHash = await getCredentialHash();
+  const cacheKey = `${REDIS_KEYS.FILE_DETAILS}${credHash}:${fileId}`;
   const memoryCacheKey = `${MEMORY_CACHE_KEYS.FILE_DETAILS}${fileId}`;
 
   const fetcher = async () => {
@@ -299,7 +309,8 @@ export async function getFolderPath(
   folderId: string,
   locale: string = "en",
 ): Promise<{ id: string; name: string }[]> {
-  const cacheKey = `${REDIS_KEYS.FOLDER_PATH}${folderId}:${locale}`;
+  const credHash = await getCredentialHash();
+  const cacheKey = `${REDIS_KEYS.FOLDER_PATH}${credHash}:${folderId}:${locale}`;
   try {
     const cachedPath: { id: string; name: string }[] | null =
       await kv.get(cacheKey);

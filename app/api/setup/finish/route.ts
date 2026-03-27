@@ -89,28 +89,20 @@ export const POST = createPublicRoute(
       updateEnv("GOOGLE_REFRESH_TOKEN", tokenData.refresh_token);
       updateEnv("NEXT_PUBLIC_ROOT_FOLDER_ID", rootFolderId);
 
+      let writeSuccess = false;
       try {
         fs.writeFileSync(envPath, envContent.trim() + "\n");
+        writeSuccess = true;
       } catch (e: unknown) {
-        console.error("Gagal menulis ke .env:", e);
-        if (
-          e &&
-          typeof e === "object" &&
-          ("code" in e ? e.code === "EACCES" || e.code === "EPERM" : false)
-        ) {
-          return NextResponse.json(
-            {
-              error:
-                "Izin ditolak (EACCES) saat menulis ke file .env. " +
-                "Jika Anda menggunakan Docker, pastikan file .env di-mount sebagai volume atau atur izin file secara manual. " +
-                "Anda juga bisa memasukkan nilai ini secara manual ke .env: " +
-                `GOOGLE_CLIENT_ID="${clientId}", GOOGLE_CLIENT_SECRET="${clientSecret}", GOOGLE_REFRESH_TOKEN="${tokenData.refresh_token}", NEXT_PUBLIC_ROOT_FOLDER_ID="${rootFolderId}"`,
-            },
-            { status: 500 },
-          );
-        }
-        throw e;
+        console.error("Gagal menulis ke .env, fallback ke konfigurasi manual:", e);
       }
+
+      const manualConfigData = {
+        GOOGLE_CLIENT_ID: clientId,
+        GOOGLE_CLIENT_SECRET: clientSecret,
+        GOOGLE_REFRESH_TOKEN: tokenData.refresh_token,
+        NEXT_PUBLIC_ROOT_FOLDER_ID: rootFolderId
+      };
 
       try {
         await invalidateAccessToken();
@@ -118,10 +110,12 @@ export const POST = createPublicRoute(
 
       return NextResponse.json({
         success: true,
-        restartNeeded: true,
-        message:
-          "Konfigurasi berhasil diperbarui di file .env. " +
-          "PENTING: Anda HARUS me-restart container/aplikasi agar perubahan ini terbaca.",
+        restartNeeded: writeSuccess,
+        manualConfigNeeded: !writeSuccess,
+        manualConfigData,
+        message: writeSuccess
+          ? "Konfigurasi berhasil diperbarui di file .env. PENTING: Anda HARUS me-restart container/aplikasi agar perubahan ini terbaca."
+          : "Gagal menulis ke .env secara otomatis. Silakan salin nilai ini secara manual.",
       });
     } catch (error: unknown) {
       const errorMessage =

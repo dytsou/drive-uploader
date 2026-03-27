@@ -22,8 +22,7 @@ export const GET = createPublicRoute(
 
     const tempHasError =
       dbHealth.status === "unhealthy" ||
-      cacheHealth.status === "unhealthy" ||
-      driveHealth.status === "unhealthy";
+      cacheHealth.status === "unhealthy";
 
     const healthData = {
       status: tempHasError ? "error" : "ok",

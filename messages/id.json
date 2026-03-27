@@ -81,7 +81,8 @@
     "sharedDrives": "Drive Bersama",
     "explorer": "Penjelajah",
     "googleDrive": "Google Drive",
-    "localCloud": "Penyimpanan Lokal"
+    "localCloud": "Penyimpanan Lokal",
+    "googleAuthError": "Autentikasi Google Drive gagal. Silakan periksa kredensial atau otorisasi ulang."
   },
   "Header": {
     "switchTheme": "Ganti Tema",

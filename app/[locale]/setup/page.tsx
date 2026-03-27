@@ -11,6 +11,7 @@ export default function SetupPage() {
   const t = useTranslations("SetupPage");
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [manualConfig, setManualConfig] = useState<Record<string, string> | null>(null);
   const [formData, setFormData] = useState({
     clientId: "",
     clientSecret: "",
@@ -68,7 +69,10 @@ export default function SetupPage() {
 
       if (res.ok) {
         localStorage.removeItem("zee_setup_temp");
-        if (data.restartNeeded) {
+        if (data.manualConfigNeeded) {
+          setManualConfig(data.manualConfigData);
+          setStep(3);
+        } else if (data.restartNeeded) {
           await alert(t("setupSuccessRestart"), { title: t("setupComplete") });
         } else {
           await alert(t("setupSuccessRedirect"), {
@@ -111,6 +115,14 @@ export default function SetupPage() {
               className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium transition-all ${step >= 2 ? "bg-blue-500 text-white" : "bg-muted text-muted-foreground"}`}
             >
               2
+            </div>
+            <div
+              className={`flex-1 h-0.5 transition-all ${step >= 3 ? "bg-blue-500" : "bg-border"}`}
+            />
+            <div
+              className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium transition-all ${step >= 3 ? "bg-blue-500 text-white" : "bg-muted text-muted-foreground"}`}
+            >
+              3
             </div>
           </div>
 
@@ -185,7 +197,7 @@ export default function SetupPage() {
                 {t("authorize")}
               </button>
             </div>
-          ) : (
+          ) : step === 2 ? (
             <div className="space-y-8">
               <div className="flex flex-col items-center text-center">
                 <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center mb-6 shadow-lg shadow-green-500/30">
@@ -280,7 +292,34 @@ export default function SetupPage() {
                 )}
               </button>
             </div>
-          )}
+          ) : step === 3 && manualConfig ? (
+            <div className="space-y-8">
+              <div className="flex flex-col items-center text-center">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center mb-6 shadow-lg shadow-yellow-500/30">
+                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                </div>
+                <h1 className="text-2xl font-semibold mb-2">Konfigurasi Manual</h1>
+                <p className="text-muted-foreground max-w-sm">
+                  Gagal menulis ke <code className="bg-muted px-1 py-0.5 rounded">.env</code> secara otomatis. Silakan salin nilai berikut dan tambahkan ke <code className="bg-muted px-1 py-0.5 rounded">.env</code> Anda secara manual, lalu <strong className="text-foreground">restart aplikasi</strong>.
+                </p>
+              </div>
+
+              <div className="bg-muted/50 p-4 rounded-xl border border-border/50 relative">
+                <pre className="text-xs overflow-x-auto whitespace-pre-wrap font-mono text-muted-foreground select-all">
+                  {`GOOGLE_CLIENT_ID="${manualConfig.GOOGLE_CLIENT_ID}"\nGOOGLE_CLIENT_SECRET="${manualConfig.GOOGLE_CLIENT_SECRET}"\nGOOGLE_REFRESH_TOKEN="${manualConfig.GOOGLE_REFRESH_TOKEN}"\nNEXT_PUBLIC_ROOT_FOLDER_ID="${manualConfig.NEXT_PUBLIC_ROOT_FOLDER_ID}"`}
+                </pre>
+              </div>
+
+              <button
+                onClick={() => router.push("/")}
+                className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-6 py-3.5 rounded-xl font-medium transition-all shadow-lg shadow-blue-500/25 flex items-center justify-center gap-2"
+              >
+                Paham, Kembali ke Beranda
+              </button>
+            </div>
+          ) : null}
 
           <p className="text-center text-xs text-muted-foreground pt-12">
             © {new Date().getFullYear()} - Created by{" "}

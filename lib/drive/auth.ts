@@ -13,56 +13,58 @@ export async function invalidateAccessToken() {
 }
 
 export async function getAccessToken(): Promise<string> {
-  try {
-    const cachedToken: string | null = await kv.get(REDIS_KEYS.ACCESS_TOKEN);
-    if (cachedToken) {
-      return cachedToken;
-    }
-  } catch (e) {
-    logger.error({ err: e }, "Failed to get cached access token");
-  }
-
   const creds = await getAppCredentials();
   if (!creds) {
     throw new Error(ERROR_MESSAGES.APP_NOT_CONFIGURED);
   }
 
-  const bodyParams = new URLSearchParams({
-    client_id: creds.clientId,
-    client_secret: creds.clientSecret,
-    refresh_token: creds.refreshToken,
-    grant_type: "refresh_token",
-  });
+const dynamicCacheKey = `${REDIS_KEYS.ACCESS_TOKEN}:${creds.refreshToken.substring(0, 10)}`;
 
-  const response = await fetch(GOOGLE_OAUTH_TOKEN_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: bodyParams,
-    cache: "no-store",
-  });
+try {
+  const cachedToken: string | null = await kv.get(dynamicCacheKey);
+  if (cachedToken) {
+    return cachedToken;
+  }
+} catch (e) {
+  logger.error({ err: e }, "Failed to get cached access token");
+}
 
-  if (!response.ok) {
-    const errorData = await response.json();
-    logger.error({ error: errorData.error }, "OAuth token refresh failed");
+const bodyParams = new URLSearchParams({
+  client_id: creds.clientId,
+  client_secret: creds.clientSecret,
+  refresh_token: creds.refreshToken,
+  grant_type: "refresh_token",
+});
 
-    if (errorData.error === ERROR_MESSAGES.INVALID_GRANT) {
-      throw new Error(ERROR_MESSAGES.SESSION_EXPIRED);
-    }
+const response = await fetch(GOOGLE_OAUTH_TOKEN_URL, {
+  method: "POST",
+  headers: { "Content-Type": "application/x-www-form-urlencoded" },
+  body: bodyParams,
+  cache: "no-store",
+});
 
-    throw new Error(errorData.error_description || ERROR_MESSAGES.AUTH_FAILED);
+if (!response.ok) {
+  const errorData = await response.json();
+  logger.error({ error: errorData.error }, "OAuth token refresh failed");
+
+  if (errorData.error === ERROR_MESSAGES.INVALID_GRANT) {
+    throw new Error(ERROR_MESSAGES.SESSION_EXPIRED);
   }
 
-  const tokenData: { access_token: string; expires_in: number } =
-    await response.json();
+  throw new Error(errorData.error_description || ERROR_MESSAGES.AUTH_FAILED);
+}
+
+const tokenData: { access_token: string; expires_in: number } =
+  await response.json();
 
   try {
-    await kv.set(REDIS_KEYS.ACCESS_TOKEN, tokenData.access_token, {
+    await kv.set(dynamicCacheKey, tokenData.access_token, {
       ex: REDIS_TTL.ACCESS_TOKEN,
     });
     logger.debug("Access token refreshed successfully");
   } catch (e) {
-    logger.error({ err: e }, "Failed to cache access token");
-  }
+  logger.error({ err: e }, "Failed to cache access token");
+}
 
-  return tokenData.access_token;
+return tokenData.access_token;
 }

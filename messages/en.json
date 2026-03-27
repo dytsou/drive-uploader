@@ -81,7 +81,8 @@
     "sharedDrives": "Shared Drives",
     "explorer": "Explorer",
     "googleDrive": "Google Drive",
-    "localCloud": "Local Storage"
+    "localCloud": "Local Storage",
+    "googleAuthError": "Google Drive authentication failed. Please check your credentials or re-authorize."
   },
   "Header": {
     "switchTheme": "Switch Theme",
