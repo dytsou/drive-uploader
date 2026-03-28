@@ -55,7 +55,7 @@ export const GET = createPublicRoute(
       const isRestricted = await isAccessRestricted(folderId, [], userEmail);
 
       const isLocalStorage = folderId.startsWith("local-storage:");
-      if ((!canSeeAll || isLocalStorage) && isRestricted) {
+      if (!canSeeAll && isRestricted) {
         if (isLocalStorage) {
           const { checkLocalStorageAccess } = await import("@/lib/auth");
           const hasLocalAccess = await checkLocalStorageAccess(request);
@@ -165,7 +165,7 @@ export const GET = createPublicRoute(
         return {
           ...file,
           isFolder: file.mimeType === "application/vnd.google-apps.folder",
-          isProtected: (isProt || isPriv) && (!canSeeAll || isLocalStorage),
+          isProtected: (isProt || isPriv) && !canSeeAll,
         };
       });
 
@@ -202,7 +202,9 @@ export const GET = createPublicRoute(
           protected: requestError.isProtected,
           folderId: requestError.folderId,
         },
-        { status: requestError.status || (requestError.isProtected ? 401 : 500) },
+        {
+          status: requestError.status || (requestError.isProtected ? 401 : 500),
+        },
       );
     }
   },
