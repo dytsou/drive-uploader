@@ -167,7 +167,7 @@ export function useFileFetching({
   }, [refreshKey, currentFolderId, queryClient]);
 
   const { data: historyData } = useQuery<FolderPathItem[], RequestError>({
-    queryKey: ["folderPath", currentFolderId, shareToken, locale, refreshKey],
+    queryKey: ["folderPath", currentFolderId, shareToken, locale],
     queryFn: () => fetchFolderPathApi(currentFolderId, shareToken, locale),
     enabled: !!currentFolderId && currentFolderId !== rootFolderId,
     initialData: initialFolderPath,
@@ -234,10 +234,10 @@ export function useFileFetching({
     FilesResponse,
     RequestError,
     InfiniteData<FilesResponse>,
-    readonly [string, string, string | null, string | undefined, number],
+    readonly [string, string, string | null, string | undefined],
     string | null
   >({
-    queryKey: ["files", currentFolderId, shareToken, bestToken, refreshKey],
+    queryKey: ["files", currentFolderId, shareToken, bestToken],
     queryFn: ({ pageParam }) =>
       fetchFilesApi({
         folderId: currentFolderId,

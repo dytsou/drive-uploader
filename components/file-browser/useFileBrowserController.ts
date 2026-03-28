@@ -323,13 +323,7 @@ export function useFileBrowserController({
 
   const handlePrefetchFolder = useCallback(
     (folderId: string) => {
-      const queryKey = [
-        "files",
-        folderId,
-        shareToken,
-        folderTokens[folderId],
-        refreshKey,
-      ];
+      const queryKey = ["files", folderId, shareToken, folderTokens[folderId]];
 
       const existingData = queryClient.getQueryState(queryKey);
       if (existingData?.fetchStatus === "fetching" || existingData?.data) {
@@ -380,7 +374,7 @@ export function useFileBrowserController({
         })
         .catch(() => {});
     },
-    [router, shareToken, queryClient, folderTokens, refreshKey],
+    [router, shareToken, queryClient, folderTokens],
   );
 
   const handlePrefetchItem = useCallback(
