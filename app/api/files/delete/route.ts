@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
 import { getAccessToken, getFileDetailsFromDrive } from "@/lib/drive";
+import { deleteLocalFile } from "@/lib/storage/local";
 import { z } from "zod";
 import { logActivity } from "@/lib/activityLogger";
 import { invalidateFolderCache } from "@/lib/cache";
@@ -16,6 +17,28 @@ export const POST = createAdminRoute(
     let fileDetails: { name?: string; parents?: string[] } | null = null;
     try {
       const { fileId } = body;
+
+      if (fileId.startsWith("local-storage:")) {
+        const localPath = fileId.replace("local-storage:", "");
+        await deleteLocalFile(localPath);
+
+        await logActivity("DELETE", {
+          itemName: localPath,
+          userEmail: session?.user?.email,
+          status: "success",
+        });
+
+        const parts = localPath.split("/").filter(Boolean);
+        if (parts.length > 1) {
+          parts.pop();
+          await invalidateFolderCache(`local-storage:${parts.join("/")}`);
+        } else {
+          await invalidateFolderCache("local-storage:");
+        }
+        await invalidateFolderCache(fileId);
+
+        return NextResponse.json({ success: true });
+      }
 
       fileDetails = await getFileDetailsFromDrive(fileId);
       if (

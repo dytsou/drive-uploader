@@ -209,3 +209,23 @@ export async function saveLocalChunk(
 
   return { status: "partial" };
 }
+
+export async function deleteLocalFile(filePath: string): Promise<void> {
+  await ensureLocalRoot();
+  const absolutePath = path.resolve(
+    LOCAL_ROOT,
+    filePath.startsWith("/") ? filePath.substring(1) : filePath,
+  );
+
+  const root = path.resolve(LOCAL_ROOT);
+  if (!absolutePath.toLowerCase().startsWith(root.toLowerCase())) {
+    throw new Error("Akses dilarang (Path traversal)");
+  }
+
+  const stats = await fs.stat(absolutePath);
+  if (stats.isDirectory()) {
+    await fs.rm(absolutePath, { recursive: true, force: true });
+  } else {
+    await fs.unlink(absolutePath);
+  }
+}
