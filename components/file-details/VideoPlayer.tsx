@@ -294,7 +294,11 @@ export default function VideoPlayer({
         ref={playerRef}
         key={currentSrc}
         title={title}
-        src={currentSrc}
+        src={
+          title.toLowerCase().endsWith(".mkv")
+            ? { src: currentSrc, type: "video/mp4" }
+            : currentSrc
+        }
         poster={poster?.replace("=s220", "=s1280")}
         aspectRatio={type === "video" ? "16/9" : undefined}
         onEnded={() => {
@@ -409,6 +413,7 @@ export default function VideoPlayer({
             currentSrc={currentSrc}
             getAbsoluteSrc={getAbsoluteSrc}
             tPlayer={tPlayer}
+            webViewLink={webViewLink}
           />
         )}
       </AnimatePresence>

@@ -231,6 +231,11 @@ export function prepareGoogleDriveUrl(
     if (!responseFileName.endsWith(exportInfo.ext)) {
       responseFileName += exportInfo.ext;
     }
+  } else if (
+    responseMimeType === "video/x-matroska" ||
+    responseFileName.toLowerCase().endsWith(".mkv")
+  ) {
+    responseMimeType = "video/mp4";
   }
 
   return {

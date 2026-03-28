@@ -112,12 +112,14 @@ interface FormatErrorOverlayProps {
   currentSrc: string;
   getAbsoluteSrc: () => string;
   tPlayer: (key: string) => string;
+  webViewLink?: string;
 }
 
 export function FormatErrorOverlay({
   currentSrc,
   getAbsoluteSrc,
   tPlayer,
+  webViewLink,
 }: FormatErrorOverlayProps) {
   return (
     <motion.div
@@ -146,6 +148,15 @@ export function FormatErrorOverlay({
         >
           <Download size={16} /> {tPlayer("downloadFile")}
         </Button>
+        {webViewLink && (
+          <Button
+            variant="secondary"
+            onClick={() => window.open(webViewLink, "_blank")}
+            className="px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2"
+          >
+            <Play size={16} /> Google Drive Player
+          </Button>
+        )}
         <Button
           variant="secondary"
           onClick={() => (window.location.href = `vlc://${getAbsoluteSrc()}`)}
@@ -161,6 +172,42 @@ export function FormatErrorOverlay({
           className="px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2"
         >
           <Play size={16} /> VLC (Mobile)
+        </Button>
+        <Button
+          variant="secondary"
+          onClick={() =>
+            (window.location.href = `potplayer://${getAbsoluteSrc()}`)
+          }
+          className="px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2"
+        >
+          <Play size={16} /> PotPlayer (PC)
+        </Button>
+        <Button
+          variant="secondary"
+          onClick={() =>
+            (window.location.href = `iina://weblink?url=${getAbsoluteSrc()}`)
+          }
+          className="px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2"
+        >
+          <Play size={16} /> IINA (Mac)
+        </Button>
+        <Button
+          variant="secondary"
+          onClick={() =>
+            (window.location.href = `intent:${getAbsoluteSrc()}#Intent;package=com.mxtech.videoplayer.ad;type=video/*;scheme=https;end`)
+          }
+          className="px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2"
+        >
+          <Play size={16} /> MX Player
+        </Button>
+        <Button
+          variant="secondary"
+          onClick={() =>
+            (window.location.href = `outplayer://${getAbsoluteSrc()}`)
+          }
+          className="px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2"
+        >
+          <Play size={16} /> Outplayer (iOS)
         </Button>
       </div>
     </motion.div>

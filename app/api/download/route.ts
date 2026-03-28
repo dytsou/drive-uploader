@@ -116,12 +116,6 @@ async function handleDownload(request: NextRequest) {
 
     if (range && !isGoogleDoc) {
       googleRequestHeaders.set("Range", range);
-    } else if (isVideoOrAudio && !isGoogleDoc && fileDetails.size) {
-      const initialChunkSize = Math.min(
-        2 * 1024 * 1024,
-        parseInt(fileDetails.size),
-      );
-      googleRequestHeaders.set("Range", `bytes=0-${initialChunkSize - 1}`);
     }
 
     if (request.method === "HEAD") {
