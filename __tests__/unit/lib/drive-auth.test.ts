@@ -32,10 +32,17 @@ describe("lib/drive/auth", () => {
   describe("getAccessToken", () => {
     it("returns cached token if available", async () => {
       (kv.get as any).mockResolvedValue("cached-access-token");
+      (getAppCredentials as any).mockResolvedValue({
+        clientId: "test-client-id",
+        clientSecret: "test-client-secret",
+        refreshToken: "test-refresh-token",
+      });
 
       const token = await getAccessToken();
       expect(token).toBe("cached-access-token");
-      expect(kv.get).toHaveBeenCalledWith(REDIS_KEYS.ACCESS_TOKEN);
+      expect(kv.get).toHaveBeenCalledWith(
+        `${REDIS_KEYS.ACCESS_TOKEN}:test-refre`,
+      );
     });
 
     it("fetches new token when cache is empty", async () => {
@@ -58,7 +65,7 @@ describe("lib/drive/auth", () => {
       const token = await getAccessToken();
       expect(token).toBe("new-access-token");
       expect(kv.set).toHaveBeenCalledWith(
-        REDIS_KEYS.ACCESS_TOKEN,
+        `${REDIS_KEYS.ACCESS_TOKEN}:test-refre`,
         "new-access-token",
         expect.any(Object),
       );

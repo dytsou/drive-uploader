@@ -106,6 +106,7 @@ describe("lib/app-config", () => {
     expect(result).toEqual({
       hideAuthor: true,
       disableGuestLogin: true,
+      localStorageAuthEnabled: false,
     });
   });
 

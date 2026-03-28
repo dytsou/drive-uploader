@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { useAppStore } from "@/lib/store";
 import { Loader2, EyeOff, UserX } from "lucide-react";
 

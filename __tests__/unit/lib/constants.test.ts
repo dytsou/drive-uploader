@@ -128,7 +128,7 @@ describe("lib/constants", () => {
     });
 
     it("has admin rate limits", () => {
-      expect(RATE_LIMITS.ADMIN.LIMIT).toBe(50);
+      expect(RATE_LIMITS.ADMIN.LIMIT).toBe(200);
       expect(RATE_LIMITS.ADMIN.WINDOW).toBe(60);
     });
   });

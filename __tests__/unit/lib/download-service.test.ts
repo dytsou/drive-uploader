@@ -95,7 +95,7 @@ describe("lib/services/download", () => {
 
     it("returns 400 when the fileId format is invalid", async () => {
       const request = new NextRequest(
-        "http://localhost:3000/api/download?fileId=../../etc/passwd",
+        "http://localhost:3000/api/download?fileId=invalid^file!",
       );
 
       const result = await validateDownloadRequest(request);

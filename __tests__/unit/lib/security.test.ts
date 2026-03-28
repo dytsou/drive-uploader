@@ -6,6 +6,10 @@ vi.mock("@/lib/db", () => ({
     protectedFolder: {
       findMany: vi.fn(),
     },
+    adminConfig: {
+      findUnique: vi.fn(),
+      upsert: vi.fn(),
+    },
   },
 }));
 

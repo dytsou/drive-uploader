@@ -128,7 +128,10 @@ export function useSidebarController() {
           setTree({});
           setDbDrives([]);
 
-          if (authData.status === "unhealthy" || authData.status === "not_configured") {
+          if (
+            authData.status === "unhealthy" ||
+            authData.status === "not_configured"
+          ) {
             useAppStore.getState().addToast({
               message: authData.error || t("googleAuthError"),
               type: "error",
@@ -150,7 +153,7 @@ export function useSidebarController() {
     if (mounted) {
       fetchAuthAndDrives();
     }
-  }, [mounted, t]);
+  }, [mounted, t, setAuthHealth]);
 
   const allManualDrives = useMemo<ManualDrive[]>(() => {
     if (!isAuthHealthy) return [];
@@ -329,6 +332,7 @@ export function useSidebarController() {
     queryClient,
     shareToken,
     locale,
+    isAuthHealthy,
   ]);
 
   const handleTouchStart = (event: React.TouchEvent) => {
@@ -450,6 +454,7 @@ export function useSidebarController() {
       dragOverFolderId,
       canEdit,
       rootFolderId,
+      isAuthHealthy,
     ],
   );
 
