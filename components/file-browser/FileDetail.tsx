@@ -288,7 +288,7 @@ export default function FileDetail(props: FileDetailProps) {
               </div>
             ) : controller.fileType === "image" ? (
               <div
-                className="w-full h-full relative cursor-zoom-in group/image flex items-center justify-center"
+                className="w-full h-full min-h-[320px] sm:min-h-[420px] lg:min-h-0 relative cursor-zoom-in group/image flex items-center justify-center"
                 onClick={() => controller.setInternalPreviewOpen(true)}
               >
                 <ImagePreview src={controller.directLink} />
