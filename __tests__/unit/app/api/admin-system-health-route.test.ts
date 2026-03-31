@@ -84,4 +84,54 @@ describe("app/api/admin/system-health GET", () => {
     });
     expect(payload.latency.totalCheckMs).toBe(42);
   });
+
+  it("returns status=error when any dependency is unhealthy", async () => {
+    mockGetHealthServicesSnapshot.mockResolvedValueOnce({
+      database: {
+        status: "healthy",
+        latency: 12,
+        checkedAt: "2026-03-23T00:00:00.000Z",
+      },
+      cache: {
+        status: "unhealthy",
+        latency: 50,
+        checkedAt: "2026-03-23T00:00:00.000Z",
+        backend: "memory",
+      },
+      google_drive: {
+        status: "healthy",
+        latency: 25,
+        checkedAt: "2026-03-23T00:00:00.000Z",
+        quota: { usage: 100, limit: 1000 },
+      },
+    });
+    mockActivityLogCount
+      .mockReset()
+      .mockResolvedValueOnce(0)
+      .mockResolvedValueOnce(0);
+
+    const response = await GET(
+      new NextRequest("http://localhost:3000/api/admin/system-health"),
+    );
+
+    expect(response.status).toBe(200);
+    const payload = await response.json();
+    expect(payload.status).toBe("error");
+    expect(payload.errorRate.trendPercentage).toBe(0);
+  });
+
+  it("returns 500 when health snapshot fails", async () => {
+    mockGetHealthServicesSnapshot.mockRejectedValueOnce(
+      new Error("health probe failed"),
+    );
+
+    const response = await GET(
+      new NextRequest("http://localhost:3000/api/admin/system-health"),
+    );
+
+    expect(response.status).toBe(500);
+    await expect(response.json()).resolves.toEqual({
+      error: "health probe failed",
+    });
+  });
 });
