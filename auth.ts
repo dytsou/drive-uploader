@@ -126,11 +126,20 @@ const authConfig: NextAuthConfig = {
           const envPass = (process.env.ADMIN_PASSWORD || "")
             .trim()
             .replace(/^["']|["']$/g, "");
+          const isProduction = process.env.NODE_ENV === "production";
 
           let isPassValid = false;
+          if (isProduction && !envPassHash) {
+            logger.error(
+              { email: normalizedInputEmail },
+              "[Auth] ADMIN_PASSWORD_HASH is required in production for credential login",
+            );
+            return null;
+          }
+
           if (envPassHash) {
             isPassValid = await bcrypt.compare(password, envPassHash);
-          } else if (envPass) {
+          } else if (!isProduction && envPass) {
             isPassValid = constantTimeEqual(password, envPass);
           }
 

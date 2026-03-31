@@ -18,6 +18,7 @@ const envSchema = z.object({
   ADMIN_PASSWORD: z
     .string()
     .min(8, "ADMIN_PASSWORD must be at least 8 characters"),
+  ADMIN_PASSWORD_HASH: z.string().optional().or(z.literal("")),
 
   DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
   REDIS_URL: z.string().optional().or(z.literal("")),
@@ -78,6 +79,10 @@ export function validateOnStartup(): Env {
     warnings.push(
       "Konfigurasi Email (SMTP) tidak ditemukan. Fitur email akan dinonaktifkan.",
     );
+  if (process.env.NODE_ENV === "production" && !process.env.ADMIN_PASSWORD_HASH)
+    warnings.push(
+      "ADMIN_PASSWORD_HASH belum diset. Login admin berbasis plaintext dinonaktifkan di production.",
+    );
 
   if (warnings.length > 0) {
     console.warn("\n⚠️  Peringatan Konfigurasi:");
@@ -104,6 +109,7 @@ export const config = {
   shareSecretKey: env.SHARE_SECRET_KEY,
   adminEmails: (env.ADMIN_EMAILS || "").split(",").filter(Boolean),
   adminPassword: env.ADMIN_PASSWORD,
+  adminPasswordHash: env.ADMIN_PASSWORD_HASH,
 
   redisUrl: env.REDIS_URL,
   databaseUrl: env.DATABASE_URL,
@@ -116,7 +122,7 @@ export const config = {
     : 0.9,
 
   isEmailEnabled: !!(env.SMTP_HOST && env.SMTP_USER && env.SMTP_PASS),
-  isDatabaseEnabled: !!env.REDIS_URL,
+  isDatabaseEnabled: !!env.DATABASE_URL,
   tmdbApiKey: env.TMDB_API_KEY,
   storageProvider: env.STORAGE_PROVIDER,
 };

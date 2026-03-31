@@ -6,6 +6,7 @@ import { NextRequest } from "next/server";
 import { auth } from "@/auth";
 import { getPrivateFolderIds } from "@/lib/utils";
 import { REDIS_KEYS } from "@/lib/constants";
+import { getLocalStorageAuthSecret } from "@/lib/local-auth-secret";
 
 export function isPrivateFolder(folderId: string): boolean {
   if (!folderId) return false;
@@ -28,11 +29,11 @@ export async function checkLocalStorageAccess(
   const cookie = request.cookies.get("local_storage_token");
   if (!cookie) return false;
 
+  const secret = getLocalStorageAuthSecret();
+  if (!secret) return false;
+
   try {
-    const SECRET = new TextEncoder().encode(
-      process.env.NEXTAUTH_SECRET || "local-storage-secret-key-123",
-    );
-    await jwtVerify(cookie.value, SECRET);
+    await jwtVerify(cookie.value, secret);
     return true;
   } catch {
     return false;

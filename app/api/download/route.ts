@@ -108,8 +108,6 @@ async function handleDownload(request: NextRequest) {
     googleRequestHeaders.set("User-Agent", "Zee-Index-Streamer/1.0");
     googleRequestHeaders.set("Accept-Encoding", "identity");
 
-    const isVideoOrAudio =
-      mimeType.startsWith("video/") || mimeType.startsWith("audio/");
     const isGoogleDoc = fileDetails.mimeType.startsWith(
       "application/vnd.google-apps.",
     );

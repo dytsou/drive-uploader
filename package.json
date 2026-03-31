@@ -2,6 +2,10 @@
   "name": "zee-index-nextjs",
   "version": "2.0.0",
   "private": true,
+  "engines": {
+    "node": ">=20 <21",
+    "pnpm": ">=10 <11"
+  },
   "scripts": {
     "dev": "dotenv -- next dev --turbopack",
     "dev:webpack": "dotenv -- next dev",

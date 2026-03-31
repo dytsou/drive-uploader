@@ -3,13 +3,21 @@ import { getAppConfig } from "@/lib/app-config";
 import { SignJWT } from "jose";
 import { db } from "@/lib/db";
 import bcrypt from "bcryptjs";
-
-const SECRET = new TextEncoder().encode(
-  process.env.NEXTAUTH_SECRET || "local-storage-secret-key-123",
-);
+import { getLocalStorageAuthSecret } from "@/lib/local-auth-secret";
 
 export async function POST(req: NextRequest) {
   try {
+    const secret = getLocalStorageAuthSecret();
+    if (!secret) {
+      console.error(
+        "[LocalAuth] NEXTAUTH_SECRET tidak valid untuk local storage auth",
+      );
+      return NextResponse.json(
+        { error: "Server authentication secret is not configured." },
+        { status: 503 },
+      );
+    }
+
     const { password } = await req.json();
     const config = await getAppConfig();
 
@@ -32,7 +40,7 @@ export async function POST(req: NextRequest) {
         .setProtectedHeader({ alg: "HS256" })
         .setIssuedAt()
         .setExpirationTime("24h")
-        .sign(SECRET);
+        .sign(secret);
 
       const response = NextResponse.json({ success: true });
       const isLocal =
