@@ -32,6 +32,7 @@ export default function AuthForm({
   const { user, addToast } = useAppStore();
   const [isRequesting, setIsRequesting] = useState(false);
   const [requestSent, setRequestSent] = useState(false);
+  const [refreshCountdown, setRefreshCountdown] = useState(5);
   const t = useTranslations("AuthForm");
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -55,9 +56,14 @@ export default function AuthForm({
       if (!res.ok) throw new Error(data.error);
 
       setRequestSent(true);
+      setRefreshCountdown(5);
       addToast({
         message: t("accessRequestSuccess"),
         type: "success",
+      });
+      addToast({
+        message: t("autoRefreshNotice"),
+        type: "info",
       });
     } catch (error: unknown) {
       addToast({
@@ -72,7 +78,7 @@ export default function AuthForm({
   useEffect(() => {
     if (!requestSent || !folderId) return;
 
-    const interval = setInterval(async () => {
+    const checkAccess = async () => {
       try {
         const res = await fetch(`/api/files?folderId=${folderId}`);
         if (res.ok) {
@@ -83,7 +89,18 @@ export default function AuthForm({
           window.location.reload();
         }
       } catch {}
-    }, 5000);
+    };
+
+    const interval = setInterval(() => {
+      setRefreshCountdown((previous) => {
+        if (previous <= 1) {
+          void checkAccess();
+          return 5;
+        }
+
+        return previous - 1;
+      });
+    }, 1000);
 
     return () => clearInterval(interval);
   }, [requestSent, folderId, addToast, t]);
@@ -187,6 +204,9 @@ export default function AuthForm({
                 </div>
                 <p className="text-xs text-muted-foreground mt-1 animate-pulse">
                   {t("waitingApproval")}
+                </p>
+                <p className="text-xs text-muted-foreground/80">
+                  {t("autoRefreshCountdown", { seconds: refreshCountdown })}
                 </p>
               </div>
             ) : (
