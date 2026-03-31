@@ -9,6 +9,7 @@ export interface KVClient {
   del(...keys: string[]): Promise<number>;
   exists(...keys: string[]): Promise<number>;
   keys(pattern: string): Promise<string[]>;
+  scanKeys(pattern: string, count?: number): Promise<string[]>;
   mget<T>(...keys: string[]): Promise<(T | null)[]>;
   mset(keyValues: Record<string, unknown>): Promise<string>;
   incr(key: string): Promise<number>;

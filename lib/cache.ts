@@ -10,7 +10,7 @@ export async function invalidateFolderCache(folderId: string) {
     ];
 
     for (const pattern of patterns) {
-      const keys = await kv.keys(pattern);
+      const keys = await kv.scanKeys(pattern);
       if (keys.length > 0) {
         await kv.del(...keys);
       }

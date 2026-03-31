@@ -23,6 +23,10 @@ interface RedisClientLike {
   del(...keys: string[]): Promise<number>;
   exists(...keys: string[]): Promise<number>;
   keys(pattern: string): Promise<string[]>;
+  scan(
+    cursor: string,
+    ...args: Array<string | number>
+  ): Promise<[string, string[]]>;
   mget(...keys: string[]): Promise<Array<string | null>>;
   mset(...values: string[]): Promise<unknown>;
   incr(key: string): Promise<number>;
@@ -153,6 +157,28 @@ export class RedisKV implements KVClient {
 
   async keys(pattern: string): Promise<string[]> {
     return await this.client.keys(pattern);
+  }
+
+  async scanKeys(pattern: string, count: number = 200): Promise<string[]> {
+    const maxCount = Math.max(1, Math.min(count, 5000));
+    let cursor = "0";
+    const keys: string[] = [];
+
+    do {
+      const [nextCursor, foundKeys] = await this.client.scan(
+        cursor,
+        "MATCH",
+        pattern,
+        "COUNT",
+        maxCount,
+      );
+      cursor = nextCursor;
+      if (foundKeys.length > 0) {
+        keys.push(...foundKeys);
+      }
+    } while (cursor !== "0");
+
+    return keys;
   }
 
   async mget<T>(...keys: string[]): Promise<(T | null)[]> {

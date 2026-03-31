@@ -103,6 +103,10 @@ export class InMemoryKV implements KVClient {
     return Array.from(allKeys).filter((key) => regex.test(key));
   }
 
+  async scanKeys(pattern: string): Promise<string[]> {
+    return await this.keys(pattern);
+  }
+
   async mget<T>(...keys: string[]): Promise<(T | null)[]> {
     return keys.map((key) => (this.store.get(key) as T) ?? null);
   }
