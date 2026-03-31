@@ -27,7 +27,11 @@ const envSchema = z.object({
   PRIVATE_FOLDER_IDS: z.string().optional(),
   STORAGE_LIMIT_GB: z.string().optional(),
   STORAGE_WARNING_THRESHOLD: z.string().optional(),
-  CRON_SECRET: z.string().optional(),
+  CRON_SECRET: z
+    .string()
+    .min(16, "CRON_SECRET must be at least 16 characters")
+    .optional()
+    .or(z.literal("")),
 
   SMTP_HOST: z.string().optional(),
   SMTP_PORT: z.string().optional(),
@@ -82,6 +86,10 @@ export function validateOnStartup(): Env {
   if (process.env.NODE_ENV === "production" && !process.env.ADMIN_PASSWORD_HASH)
     warnings.push(
       "ADMIN_PASSWORD_HASH belum diset. Login admin berbasis plaintext dinonaktifkan di production.",
+    );
+  if (process.env.NODE_ENV === "production" && !process.env.CRON_SECRET)
+    warnings.push(
+      "CRON_SECRET belum diset. Endpoint cron akan menolak semua request.",
     );
 
   if (warnings.length > 0) {

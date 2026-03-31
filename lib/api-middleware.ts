@@ -85,6 +85,23 @@ function isPromiseLike(value: unknown): value is Promise<unknown> {
   return !!value && typeof value === "object" && "then" in value;
 }
 
+function constantTimeEqual(a: string, b: string): boolean {
+  const encoder = new TextEncoder();
+  const encodedA = encoder.encode(a);
+  const encodedB = encoder.encode(b);
+
+  if (encodedA.length !== encodedB.length) {
+    return false;
+  }
+
+  let result = 0;
+  for (let i = 0; i < encodedA.length; i += 1) {
+    result |= encodedA[i] ^ encodedB[i];
+  }
+
+  return result === 0;
+}
+
 async function resolveParams<TParams>(params: unknown): Promise<TParams> {
   if (isPromiseLike(params)) {
     return (await params) as TParams;
@@ -418,8 +435,17 @@ export function createCronRoute<
 ) {
   return createPublicRoute<undefined, TQuerySchema>(
     async (context) => {
-      const authHeader = context.request.headers.get("authorization");
-      if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+      const cronSecret = (process.env.CRON_SECRET || "").trim();
+      if (!cronSecret) {
+        throw new ApiRouteError(503, "CRON_SECRET is not configured");
+      }
+
+      const authHeader = context.request.headers.get("authorization") || "";
+      const token = authHeader.startsWith("Bearer ")
+        ? authHeader.slice(7).trim()
+        : "";
+
+      if (!token || !constantTimeEqual(token, cronSecret)) {
         throw new ApiRouteError(401, "Unauthorized");
       }
 

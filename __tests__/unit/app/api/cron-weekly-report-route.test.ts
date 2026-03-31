@@ -48,6 +48,17 @@ describe("app/api/cron/weekly-report route", () => {
     });
   });
 
+  it("returns 503 when CRON_SECRET is not configured", async () => {
+    delete process.env.CRON_SECRET;
+
+    const response = await GET(createCronRequest("Bearer any-token"));
+
+    expect(response.status).toBe(503);
+    await expect(response.json()).resolves.toMatchObject({
+      error: "CRON_SECRET is not configured",
+    });
+  });
+
   it("returns no-admin message when admin emails are not configured", async () => {
     delete process.env.ADMIN_EMAILS;
 
