@@ -812,5 +812,25 @@
     "today": "Hari Ini",
     "week": "Minggu Ini",
     "month": "Bulan Ini"
+  },
+  "Api": {
+    "Share": {
+      "securityPolicySensitive": "Kebijakan Keamanan: Berkas terdeteksi memuat data sensitif. Anda diwajibkan mengaktifkan opsi 'Wajib Login' untuk berbaginya.",
+      "invalidExpire": "Format expiresIn tidak valid. Gunakan format: 1h, 7d, 30d",
+      "tokenExpired": "Token tidak memiliki waktu kedaluwarsa.",
+      "createFail": "Gagal membuat tautan berbagi.",
+      "emailSubject": "[Zee Index] Tautan {type} Baru Dibuat",
+      "emailHello": "Halo Admin",
+      "emailBody": "Tautan {type} baru telah dibuat oleh <b>{email}</b>.",
+      "collection": "Koleksi",
+      "share": "Berbagi",
+      "item": "Item",
+      "path": "Path",
+      "expiresAt": "Kedaluwarsa Pada",
+      "loginRequired": "Wajib Login",
+      "yes": "Ya",
+      "no": "Tidak",
+      "manageText": "Anda dapat mengelola semua tautan di dasbor admin."
+    }
   }
 }

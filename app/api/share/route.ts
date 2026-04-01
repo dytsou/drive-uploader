@@ -14,9 +14,15 @@ import {
   type ShareCreateRequest,
 } from "@/lib/link-payloads";
 import { REDIS_KEYS } from "@/lib/constants";
+import { cookies } from "next/headers";
+import { getTranslations } from "next-intl/server";
 
 export const POST = createAdminRoute(
   async ({ body, session }) => {
+    const cookieStore = await cookies();
+    const locale = cookieStore.get("NEXT_LOCALE")?.value || "en";
+    const t = await getTranslations({ locale, namespace: "Api.Share" });
+
     try {
       const {
         path,
@@ -31,12 +37,46 @@ export const POST = createAdminRoute(
       }: ShareCreateRequest = body;
       const isCollection = items && items.length > 0;
 
+      const sensitiveKeywords = [
+        "ktp",
+        "password",
+        "rahasia",
+        "secret",
+        "keuangan",
+        "finance",
+        "invoice",
+        "identitas",
+        "credential",
+        ".env",
+        "id_card",
+        "confidential",
+        "slip_gaji",
+      ];
+
+      const checkName = (name: string) =>
+        sensitiveKeywords.some((keyword) =>
+          name.toLowerCase().includes(keyword),
+        );
+
+      const isSensitive =
+        checkName(itemName) ||
+        (isCollection &&
+          items.some((item: any) => item.name && checkName(item.name)));
+
+      if (isSensitive && !loginRequired) {
+        return NextResponse.json(
+          {
+            error: t("securityPolicySensitive"),
+          },
+          { status: 403 },
+        );
+      }
+
       const validExpireFormats = /^\d+[smhdw]$/;
       if (!validExpireFormats.test(expiresIn)) {
         return NextResponse.json(
           {
-            error:
-              "Format expiresIn tidak valid. Gunakan format seperti: 1h, 7d, 30d",
+            error: t("invalidExpire"),
           },
           { status: 400 },
         );
@@ -64,7 +104,7 @@ export const POST = createAdminRoute(
 
       const decodedToken = decodeJwt(token);
       if (!decodedToken.exp) {
-        throw new Error("Token tidak memiliki waktu kedaluwarsa.");
+        throw new Error(t("tokenExpired"));
       }
 
       if (isCollection) {
@@ -115,23 +155,21 @@ export const POST = createAdminRoute(
       if (adminEmails.length > 0) {
         await sendMail({
           to: adminEmails,
-          subject: `[Zee Index] Tautan ${
-            isCollection ? "Koleksi" : "Berbagi"
-          } Baru Dibuat`,
+          subject: t("emailSubject", {
+            type: isCollection ? t("collection") : t("share"),
+          }),
           html: `
     
-        <p>Halo Admin,</p>
-                <p>Tautan ${
-                  isCollection ? "koleksi" : "berbagi"
-                } baru telah dibuat oleh <b>${session.user.email}</b>.</p>
+        <p>${t("emailHello")},</p>
+                <p>${t("emailBody", { type: (isCollection ? t("collection") : t("share")).toLowerCase(), email: session?.user?.email || "Unknown" })}</p>
                 <ul>
-                    <li><b>Item:</b> ${shareName}</li>
-                    <li><b>Path:</b> ${sharePath}</li>
-                    <li><b>Kedaluwarsa pada:</b> ${expiresAtDate.toLocaleString("id-ID", { timeZone: "Asia/Jakarta" })}</li>
-                    <li><b>Wajib Login:</b> ${loginRequired ? "Ya" : "Tidak"}</li>
+                    <li><b>${t("item")}</b> ${shareName}</li>
+                    <li><b>${t("path")}</b> ${sharePath}</li>
+                    <li><b>${t("expiresAt")}</b> ${expiresAtDate.toLocaleString(locale === "id" ? "id-ID" : "en-US", { timeZone: "Asia/Jakarta" })}</li>
+                    <li><b>${t("loginRequired")}</b> ${loginRequired ? t("yes") : t("no")}</li>
                 </ul>
     
-            <p>Anda dapat mengelola semua tautan di dasbor admin.</p>
+            <p>${t("manageText")}</p>
             `,
         });
       }
@@ -139,10 +177,7 @@ export const POST = createAdminRoute(
       return NextResponse.json({ shareableUrl, token, jti, newShareLink });
     } catch (error) {
       console.error("Error generating share link:", error);
-      return NextResponse.json(
-        { error: "Gagal membuat tautan berbagi." },
-        { status: 500 },
-      );
+      return NextResponse.json({ error: t("createFail") }, { status: 500 });
     }
   },
   { requireEmail: true, bodySchema: shareCreateRequestSchema },

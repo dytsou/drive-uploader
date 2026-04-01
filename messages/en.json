@@ -812,5 +812,25 @@
     "today": "Today",
     "week": "This Week",
     "month": "This Month"
+  },
+  "Api": {
+    "Share": {
+      "securityPolicySensitive": "Security Policy: Document detected containing sensitive data. You must enable 'Login Required' to share this link.",
+      "invalidExpire": "Invalid expiresIn format. Use formats like: 1h, 7d, 30d",
+      "tokenExpired": "Token missing expiration time.",
+      "createFail": "Failed to create share link.",
+      "emailSubject": "[Zee Index] New {type} Link Created",
+      "emailHello": "Hello Admin",
+      "emailBody": "A new {type} link has been created by <b>{email}</b>.",
+      "collection": "Collection",
+      "share": "Share",
+      "item": "Item",
+      "path": "Path",
+      "expiresAt": "Expires At",
+      "loginRequired": "Login Required",
+      "yes": "Yes",
+      "no": "No",
+      "manageText": "You can manage all sharing links in the admin dashboard."
+    }
   }
 }
