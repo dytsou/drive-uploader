@@ -14,14 +14,107 @@ import {
   type ShareCreateRequest,
 } from "@/lib/link-payloads";
 import { REDIS_KEYS } from "@/lib/constants";
-import { cookies } from "next/headers";
 import { getTranslations } from "next-intl/server";
 
+type ShareTranslationKey =
+  | "securityPolicySensitive"
+  | "invalidExpire"
+  | "tokenExpired"
+  | "createFail"
+  | "emailSubject"
+  | "collection"
+  | "share"
+  | "emailHello"
+  | "emailBody"
+  | "item"
+  | "path"
+  | "expiresAt"
+  | "loginRequired"
+  | "yes"
+  | "no"
+  | "manageText";
+
+type ShareTranslator = (
+  key: ShareTranslationKey,
+  values?: Record<string, unknown>,
+) => string;
+
+const SHARE_MESSAGES_ID: Record<ShareTranslationKey, string> = {
+  securityPolicySensitive:
+    "Kebijakan Keamanan: Dokumen sensitif wajib login untuk dibagikan.",
+  invalidExpire:
+    "Format expiresIn tidak valid. Gunakan format seperti: 1h, 7d, 30d",
+  tokenExpired: "Token kedaluwarsa atau tidak valid.",
+  createFail: "Gagal membuat tautan berbagi.",
+  emailSubject: "Notifikasi {type} baru dibuat",
+  collection: "Koleksi",
+  share: "Berbagi",
+  emailHello: "Halo Admin",
+  emailBody: "{type} baru telah dibuat oleh {email}.",
+  item: "Item:",
+  path: "Path:",
+  expiresAt: "Kedaluwarsa:",
+  loginRequired: "Wajib Login:",
+  yes: "Ya",
+  no: "Tidak",
+  manageText:
+    "Silakan masuk ke dashboard admin untuk mengelola tautan berbagi ini.",
+};
+
+const SHARE_MESSAGES_EN: Record<ShareTranslationKey, string> = {
+  securityPolicySensitive:
+    "Security Policy: Sensitive documents require login before sharing.",
+  invalidExpire: "Invalid expiresIn format. Use format like: 1h, 7d, 30d",
+  tokenExpired: "Token expired or invalid.",
+  createFail: "Failed to create share link.",
+  emailSubject: "New {type} has been created",
+  collection: "Collection",
+  share: "Share",
+  emailHello: "Hello Admin",
+  emailBody: "A new {type} has been created by {email}.",
+  item: "Item:",
+  path: "Path:",
+  expiresAt: "Expires At:",
+  loginRequired: "Login Required:",
+  yes: "Yes",
+  no: "No",
+  manageText: "Please open the admin dashboard to manage this share link.",
+};
+
+function interpolate(
+  template: string,
+  values?: Record<string, unknown>,
+): string {
+  if (!values) {
+    return template;
+  }
+
+  return template.replace(/\{(\w+)\}/g, (_, key: string) => {
+    const value = values[key];
+    return value === undefined || value === null ? "" : String(value);
+  });
+}
+
+async function getShareTranslator(locale: string): Promise<ShareTranslator> {
+  const fallbackMessages =
+    locale === "id" ? SHARE_MESSAGES_ID : SHARE_MESSAGES_EN;
+
+  try {
+    const translator = await getTranslations({
+      locale,
+      namespace: "Api.Share",
+    });
+    return (key, values) =>
+      translator(key as Parameters<typeof translator>[0], values as never);
+  } catch {
+    return (key, values) => interpolate(fallbackMessages[key], values);
+  }
+}
+
 export const POST = createAdminRoute(
-  async ({ body, session }) => {
-    const cookieStore = await cookies();
-    const locale = cookieStore.get("NEXT_LOCALE")?.value || "en";
-    const t = await getTranslations({ locale, namespace: "Api.Share" });
+  async ({ body, session, request }) => {
+    const locale = request.cookies.get("NEXT_LOCALE")?.value || "id";
+    const t = await getShareTranslator(locale);
 
     try {
       const {
