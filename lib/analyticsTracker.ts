@@ -10,6 +10,10 @@ import {
   type PopularPagePayload,
   type ReferrerPayload,
 } from "@/lib/telemetry";
+import {
+  mapBandwidthToSeverity,
+  publishPipelineEvent,
+} from "@/lib/events/pipeline";
 
 const PAGEVIEW_KEY = "zee-index:analytics:pageviews";
 const VISITOR_KEY = "zee-index:analytics:visitors";
@@ -184,6 +188,28 @@ export async function trackPageView(params: {
       kv.zremrangebyscore(DEVICE_STATS_KEY, 0, expirationTime),
       kv.zremrangebyscore(REFERRER_KEY, 0, expirationTime),
     ]);
+
+    await publishPipelineEvent({
+      id: event.id,
+      timestamp: event.timestamp,
+      type: "analytics:pageview",
+      message: `Page viewed: ${event.path}`,
+      severity: "info",
+      payload: {
+        path: event.path,
+        referrer: event.referrer,
+        visitorId: event.visitorId,
+        ip: event.ip,
+      },
+      metadata: {
+        browser: event.browser,
+        os: event.os,
+        device: event.device,
+      },
+      category: "analytics",
+      source: "analytics",
+      publishRealtime: false,
+    });
   } catch (error) {
     console.error("[Analytics] Failed to track page view:", error);
   }
@@ -196,6 +222,19 @@ export async function trackBandwidth(bytes: number): Promise<void> {
     const current = await kv.get<number>(currentKey);
     await kv.set(currentKey, (current || 0) + bytes, {
       ex: LOG_EXPIRATION_SECONDS,
+    });
+
+    await publishPipelineEvent({
+      type: "analytics:bandwidth",
+      message: `Bandwidth tracked: ${bytes} bytes`,
+      severity: mapBandwidthToSeverity(bytes),
+      payload: {
+        bytes,
+        dayKey,
+      },
+      category: "analytics",
+      source: "analytics",
+      publishRealtime: false,
     });
   } catch (error) {
     console.error("[Analytics] Failed to track bandwidth:", error);

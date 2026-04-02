@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { createAdminRoute } from "@/lib/api-middleware";
 import { kv } from "@/lib/kv";
+import { EVENT_PIPELINE_KEYS } from "@/lib/events/pipeline";
 
 import type { ActivityLog } from "@/lib/activityLogger";
 
-const ACTIVITY_LOG_KEY = "zee-index:activity-log";
 const LOGS_PER_PAGE = 50;
 
 export const dynamic = "force-dynamic";
@@ -14,19 +14,19 @@ export const GET = createAdminRoute(async ({ request }) => {
   const offset = parseInt(searchParams.get("offset") || "0", 10);
 
   try {
-    const logStrings: string[] = await kv.zrange(
-      ACTIVITY_LOG_KEY,
+    const rawLogs = await kv.zrange<unknown>(
+      EVENT_PIPELINE_KEYS.activityLog,
       offset,
       offset + LOGS_PER_PAGE - 1,
       { rev: true },
     );
 
-    const logs: ActivityLog[] = logStrings
-      .map((logStr) => {
+    const logs: ActivityLog[] = rawLogs
+      .map((entry) => {
         try {
-          return JSON.parse(logStr);
+          return typeof entry === "string" ? JSON.parse(entry) : entry;
         } catch (e) {
-          console.error("Gagal mem-parsing entri log:", logStr, e);
+          console.error("Gagal mem-parsing entri log:", entry, e);
           return null;
         }
       })

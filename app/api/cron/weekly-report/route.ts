@@ -3,14 +3,15 @@ import { createCronRoute } from "@/lib/api-middleware";
 import { kv } from "@/lib/kv";
 import { sendMail } from "@/lib/mailer";
 import { formatBytes } from "@/lib/utils";
+import { EVENT_PIPELINE_KEYS } from "@/lib/events/pipeline";
 
 export const dynamic = "force-dynamic";
 
 export const GET = createCronRoute(async () => {
   try {
     const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-    const logs: string[] = await kv.zrange(
-      "zee-index:activity-log",
+    const logs = await kv.zrange<unknown>(
+      EVENT_PIPELINE_KEYS.activityLog,
       sevenDaysAgo,
       Date.now(),
       { byScore: true },
@@ -20,8 +21,12 @@ export const GET = createCronRoute(async () => {
     let downloadCount = 0;
     let totalUploadSize = 0;
 
-    logs.forEach((logStr) => {
-      const log = JSON.parse(logStr);
+    logs.forEach((entry) => {
+      const log =
+        typeof entry === "string"
+          ? (JSON.parse(entry) as { type?: string; itemSize?: string | number })
+          : (entry as { type?: string; itemSize?: string | number });
+
       if (log.type === "UPLOAD") {
         uploadCount++;
         totalUploadSize += Number(log.itemSize || 0);

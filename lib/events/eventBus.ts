@@ -83,15 +83,7 @@ class EventBus {
     }
   }
 
-  async emit<T extends EventType>(
-    event: Omit<Extract<AppEvent, { type: T }>, "id" | "timestamp">,
-  ) {
-    const fullEvent = appEventSchema.parse({
-      ...event,
-      id: crypto.randomUUID(),
-      timestamp: Date.now(),
-    });
-
+  private async publish(fullEvent: AppEvent): Promise<void> {
     if (this.publisher && this.isConnected) {
       await this.publisher.publish(REDIS_CHANNEL, JSON.stringify(fullEvent));
     } else {
@@ -104,6 +96,25 @@ class EventBus {
     } catch (err) {
       logger.error({ err }, "[EventBus] Failed to save event to history");
     }
+  }
+
+  async emit<T extends EventType>(
+    event: Omit<Extract<AppEvent, { type: T }>, "id" | "timestamp">,
+  ): Promise<Extract<AppEvent, { type: T }>> {
+    const fullEvent = appEventSchema.parse({
+      ...event,
+      id: crypto.randomUUID(),
+      timestamp: Date.now(),
+    });
+
+    await this.publish(fullEvent);
+    return fullEvent as Extract<AppEvent, { type: T }>;
+  }
+
+  async emitValidated(event: AppEvent): Promise<AppEvent> {
+    const fullEvent = appEventSchema.parse(event);
+    await this.publish(fullEvent);
+    return fullEvent;
   }
 
   private notifyLocalListeners(event: AppEvent) {

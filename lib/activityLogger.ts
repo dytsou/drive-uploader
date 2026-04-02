@@ -3,7 +3,7 @@ import type { ActivityLog as DbActivityLog } from "@prisma/client";
 import { z } from "zod";
 import { logger } from "@/lib/logger";
 import { db } from "@/lib/db";
-import { eventBus, EventType } from "@/lib/events/eventBus";
+import { publishActivityEvent } from "@/lib/events/pipeline";
 
 export type ActivityType =
   | "UPLOAD"
@@ -354,51 +354,9 @@ export async function logActivity<T extends ActivityType>(
       },
     });
 
-    let eventType: EventType | null = null;
-    if (type === "UPLOAD") eventType = "file:upload";
-    else if (type === "DELETE" || type === "DELETE_FOREVER")
-      eventType = "file:delete";
-    else if (["MOVE", "RENAME", "COPY", "RESTORE"].includes(type))
-      eventType = "file:move";
-    else if (type === "SHARE_LINK_CREATED") eventType = "share:create";
-    else if (
-      ["CONFIG_CHANGED", "ADMIN_ADDED", "PROTECTED_FOLDER_ADDED"].includes(type)
-    )
-      eventType = "system:alert";
+    const mappedLog = mapDbActivityLog(logEntry) as ActivityLog<T>;
 
-    if (eventType) {
-      const user = details.userEmail
-        ? details.userEmail.split("@")[0]
-        : "Someone";
-      const item = details.itemName || "an item";
-      const msgMap: Record<string, string> = {
-        "file:upload": `${user} uploaded ${item}`,
-        "file:delete": `${user} deleted ${item}`,
-        "file:move": `${user} modified ${item}`,
-        "share:create": `${user} shared ${item}`,
-        "system:alert": `System config changed by ${user}`,
-      };
-
-      eventBus
-        .emit({
-          type: eventType,
-          message: msgMap[eventType] || `${user} performed an action`,
-          severity:
-            SEVERITY_MAP[type] === "critical"
-              ? "error"
-              : (SEVERITY_MAP[type] as
-                  | "info"
-                  | "warning"
-                  | "error"
-                  | "success"),
-          userEmail: details.userEmail || undefined,
-          userId: details.userId || undefined,
-          itemName: details.itemName || undefined,
-        })
-        .catch((err) => {
-          logger.error({ err }, "Failed to emit event to EventBus");
-        });
-    }
+    await publishActivityEvent(mappedLog);
 
     const expirationTime = Date.now() - 60 * 60 * 24 * 90 * 1000;
     db.activityLog
@@ -409,7 +367,7 @@ export async function logActivity<T extends ActivityType>(
         logger.error({ err: error }, "Failed to clean old activity logs"),
       );
 
-    return mapDbActivityLog(logEntry) as ActivityLog<T>;
+    return mappedLog;
   } catch (error) {
     logger.error({ err: error }, "Failed to log activity");
     return null;

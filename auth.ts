@@ -9,6 +9,7 @@ import { kv } from "@/lib/kv";
 import { REDIS_KEYS } from "@/lib/constants";
 import { getPublicAppConfig } from "@/lib/app-config";
 import bcrypt from "bcryptjs";
+import type { ActivityDetails } from "@/lib/activityLogger";
 
 import type { NextAuthConfig } from "next-auth";
 
@@ -70,6 +71,19 @@ async function resolveRole(
   return "USER";
 }
 
+type AuthAuditType = "LOGIN_SUCCESS" | "LOGIN_FAILURE" | "RATE_LIMITED";
+
+function emitAuthActivity<T extends AuthAuditType>(
+  type: T,
+  details: ActivityDetails<T>,
+): void {
+  void import("@/lib/activityLogger")
+    .then(({ logActivity }) => logActivity(type, details))
+    .catch((error) => {
+      logger.error({ err: error, type }, "[Auth] Failed to record auth event");
+    });
+}
+
 const authConfig: NextAuthConfig = {
   adapter: PrismaAdapter(db),
   providers: [
@@ -92,6 +106,17 @@ const authConfig: NextAuthConfig = {
 
         const ratelimitResult = await authLimiter.check(ip);
         if (!ratelimitResult.success) {
+          emitAuthActivity("RATE_LIMITED", {
+            userEmail:
+              typeof credentials?.email === "string"
+                ? credentials.email.toLowerCase().trim()
+                : undefined,
+            status: "blocked",
+            metadata: {
+              scope: "auth",
+              identifier: ip,
+            },
+          });
           logger.warn({ ip }, "[Auth] Rate limit exceeded");
           throw new Error(
             "Terlalu banyak percobaan login. Silakan tunggu sebentar.",
@@ -102,6 +127,16 @@ const authConfig: NextAuthConfig = {
         const password = credentials?.password as string;
 
         if (!email || !password) {
+          emitAuthActivity("LOGIN_FAILURE", {
+            userEmail:
+              typeof email === "string"
+                ? email.toLowerCase().trim()
+                : undefined,
+            status: "failure",
+            metadata: {
+              reason: "missing_credentials",
+            },
+          });
           logger.warn("[Auth] No credentials provided");
           return null;
         }
@@ -155,6 +190,11 @@ const authConfig: NextAuthConfig = {
           );
 
           if (isAdmin && isPassValid) {
+            emitAuthActivity("LOGIN_SUCCESS", {
+              userEmail: normalizedInputEmail,
+              userRole: "ADMIN",
+              status: "success",
+            });
             logger.info(
               { email: normalizedInputEmail },
               "[Auth] Success: Credentials match",
@@ -188,8 +228,25 @@ const authConfig: NextAuthConfig = {
             { isAdmin, isPassValid, email: normalizedInputEmail },
             "[Auth] Failed: Invalid creds or not admin",
           );
+          emitAuthActivity("LOGIN_FAILURE", {
+            userEmail: normalizedInputEmail,
+            status: "failure",
+            metadata: {
+              reason: isAdmin
+                ? "invalid_password"
+                : "not_admin_or_invalid_credentials",
+            },
+          });
           return null;
         } catch (error) {
+          emitAuthActivity("LOGIN_FAILURE", {
+            userEmail: email ? email.toLowerCase().trim() : undefined,
+            status: "failure",
+            error: error instanceof Error ? error.message : "auth_exception",
+            metadata: {
+              reason: "auth_exception",
+            },
+          });
           logger.error({ err: error }, "[Auth] Exception in authorize");
           return null;
         }
