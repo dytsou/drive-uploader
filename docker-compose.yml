@@ -84,6 +84,34 @@ services:
       retries: 3
       start_period: 40s
 
+  cron-monitor:
+    image: curlimages/curl:8.10.1
+    container_name: zee-cron-monitor
+    restart: unless-stopped
+    environment:
+      - CRON_SECRET=${CRON_SECRET}
+      - CRON_MONITOR_INTERVAL_SECONDS=${CRON_MONITOR_INTERVAL_SECONDS:-300}
+    entrypoint: ["/bin/sh", "-c"]
+    command: |
+      while true; do
+        if [ -n "$${CRON_SECRET}" ]; then
+          echo "[cron-monitor] Running incident monitor cron..."
+          curl -fsS -H "Authorization: Bearer $${CRON_SECRET}" http://zee-index:3000/api/cron/incident-monitor || true
+          echo "[cron-monitor] Running storage check cron..."
+          curl -fsS -H "Authorization: Bearer $${CRON_SECRET}" http://zee-index:3000/api/cron/storage-check || true
+        else
+          echo "[cron-monitor] CRON_SECRET is empty. Skipping jobs."
+        fi
+        sleep "$${CRON_MONITOR_INTERVAL_SECONDS:-300}"
+      done
+    depends_on:
+      zee-index:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 40M
+
   duckdns:
     image: lscr.io/linuxserver/duckdns:latest
     container_name: duckdns

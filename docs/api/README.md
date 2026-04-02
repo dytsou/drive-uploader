@@ -120,14 +120,15 @@ This folder contains the maintained API reference for Zee-Index.
 
 ### File Requests and Jobs
 
-| Method | Endpoint                    | Description                          |
-| ------ | --------------------------- | ------------------------------------ |
-| POST   | `/api/file-request`         | Create a file request                |
-| GET    | `/api/file-request/[token]` | Resolve a request by token           |
-| POST   | `/api/file-request/upload`  | Upload into a request                |
-| POST   | `/api/request-access`       | Request access to a protected folder |
-| POST   | `/api/cron/storage-check`   | Scheduled storage audit              |
-| POST   | `/api/cron/weekly-report`   | Scheduled report generation          |
+| Method | Endpoint                     | Description                          |
+| ------ | ---------------------------- | ------------------------------------ |
+| POST   | `/api/file-request`          | Create a file request                |
+| GET    | `/api/file-request/[token]`  | Resolve a request by token           |
+| POST   | `/api/file-request/upload`   | Upload into a request                |
+| POST   | `/api/request-access`        | Request access to a protected folder |
+| GET    | `/api/cron/storage-check`    | Scheduled storage audit              |
+| GET    | `/api/cron/weekly-report`    | Scheduled report generation          |
+| GET    | `/api/cron/incident-monitor` | Scheduled incident rule evaluation   |
 
 ## Authentication
 
