@@ -8,6 +8,45 @@ export const LOCAL_ROOT = path.isAbsolute(LOCAL_STORAGE_PATH)
   ? LOCAL_STORAGE_PATH
   : path.resolve(process.cwd(), LOCAL_STORAGE_PATH);
 
+export function isPathInsideLocalRoot(targetPath: string): boolean {
+  const root = path.resolve(LOCAL_ROOT);
+  const absoluteTarget = path.resolve(targetPath);
+  const relativePath = path.relative(root, absoluteTarget);
+
+  return (
+    relativePath === "" ||
+    (!relativePath.startsWith("..") && !path.isAbsolute(relativePath))
+  );
+}
+
+function resolveLocalTargetPath(filePath: string): string {
+  const normalizedFilePath = filePath.startsWith("/")
+    ? filePath.substring(1)
+    : filePath;
+  const absolutePath = path.resolve(LOCAL_ROOT, normalizedFilePath);
+
+  if (!isPathInsideLocalRoot(absolutePath)) {
+    throw new Error("Akses dilarang (Path traversal)");
+  }
+
+  return absolutePath;
+}
+
+function sanitizeLocalFileName(fileName: string): string {
+  const trimmedName = fileName.trim();
+  if (
+    !trimmedName ||
+    trimmedName === "." ||
+    trimmedName === ".." ||
+    trimmedName.includes("/") ||
+    trimmedName.includes("\\")
+  ) {
+    throw new Error("Nama file tidak valid");
+  }
+
+  return trimmedName;
+}
+
 export async function ensureLocalRoot() {
   try {
     await fs.access(LOCAL_ROOT);
@@ -28,18 +67,7 @@ export async function listLocalFiles(
   folderPath: string,
 ): Promise<ListFilesResponse> {
   await ensureLocalRoot();
-  const absolutePath = path.resolve(
-    LOCAL_ROOT,
-    folderPath.startsWith("/") ? folderPath.substring(1) : folderPath,
-  );
-
-  if (
-    !absolutePath
-      .toLowerCase()
-      .startsWith(path.resolve(LOCAL_ROOT).toLowerCase())
-  ) {
-    throw new Error("Akses dilarang (Path traversal)");
-  }
+  const absolutePath = resolveLocalTargetPath(folderPath);
 
   const allEntries = await fs.readdir(absolutePath, { withFileTypes: true });
   const entries = allEntries.filter((e) => !e.name.startsWith("."));
@@ -86,16 +114,12 @@ export async function getLocalFileDetails(
   filePath: string,
 ): Promise<ZeeFile | null> {
   await ensureLocalRoot();
-  const absolutePath = path.resolve(
-    LOCAL_ROOT,
-    filePath.startsWith("/") ? filePath.substring(1) : filePath,
-  );
+  let absolutePath = "";
 
-  const root = path.resolve(LOCAL_ROOT);
-  if (!absolutePath.toLowerCase().startsWith(root.toLowerCase())) {
-    console.error(
-      `[Storage] Path traversal attempt: ${absolutePath} does not start with ${root}`,
-    );
+  try {
+    absolutePath = resolveLocalTargetPath(filePath);
+  } catch {
+    console.error(`[Storage] Path traversal attempt: ${filePath}`);
     return null;
   }
 
@@ -130,16 +154,7 @@ export async function getLocalFileDetails(
 
 export async function getLocalFilePath(filePath: string): Promise<string> {
   await ensureLocalRoot();
-  const absolutePath = path.resolve(
-    LOCAL_ROOT,
-    filePath.startsWith("/") || filePath.includes(":\\") ? filePath : filePath,
-  );
-
-  const root = path.resolve(LOCAL_ROOT);
-  if (!absolutePath.toLowerCase().startsWith(root.toLowerCase())) {
-    throw new Error("Akses dilarang (Path traversal)");
-  }
-  return absolutePath;
+  return resolveLocalTargetPath(filePath);
 }
 
 export async function saveLocalChunk(
@@ -154,7 +169,7 @@ export async function saveLocalChunk(
   const fileNameEncoded = content.substring(firstSlash + 1);
 
   const parentId = decodeURIComponent(parentIdEncoded);
-  const fileName = decodeURIComponent(fileNameEncoded);
+  const fileName = sanitizeLocalFileName(decodeURIComponent(fileNameEncoded));
 
   await ensureLocalRoot();
 
@@ -212,15 +227,7 @@ export async function saveLocalChunk(
 
 export async function deleteLocalFile(filePath: string): Promise<void> {
   await ensureLocalRoot();
-  const absolutePath = path.resolve(
-    LOCAL_ROOT,
-    filePath.startsWith("/") ? filePath.substring(1) : filePath,
-  );
-
-  const root = path.resolve(LOCAL_ROOT);
-  if (!absolutePath.toLowerCase().startsWith(root.toLowerCase())) {
-    throw new Error("Akses dilarang (Path traversal)");
-  }
+  const absolutePath = resolveLocalTargetPath(filePath);
 
   const stats = await fs.stat(absolutePath);
   if (stats.isDirectory()) {

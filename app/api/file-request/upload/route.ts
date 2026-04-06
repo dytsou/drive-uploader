@@ -13,6 +13,8 @@ import {
 import { z } from "zod";
 
 export const maxDuration = 60;
+const GOOGLE_UPLOAD_HOST = "www.googleapis.com";
+const GOOGLE_UPLOAD_PATH_PREFIX = "/upload/drive/v3/files";
 
 const fileRequestUploadQuerySchema = z
   .object({
@@ -29,6 +31,20 @@ const fileRequestUploadQuerySchema = z
       });
     }
   });
+
+export function isAllowedResumableUploadUrl(uploadUrl: string): boolean {
+  try {
+    const parsed = new URL(uploadUrl);
+    return (
+      parsed.protocol === "https:" &&
+      parsed.hostname === GOOGLE_UPLOAD_HOST &&
+      parsed.pathname.startsWith(GOOGLE_UPLOAD_PATH_PREFIX) &&
+      parsed.searchParams.has("upload_id")
+    );
+  } catch {
+    return false;
+  }
+}
 
 export const POST = createPublicRoute(
   async ({ request, query }) => {
@@ -90,9 +106,9 @@ export const POST = createPublicRoute(
         const uploadUrl = query.uploadUrl!;
         const contentRange = request.headers.get("Content-Range");
 
-        if (!contentRange) {
+        if (!contentRange || !isAllowedResumableUploadUrl(uploadUrl)) {
           return NextResponse.json(
-            { error: "Missing params" },
+            { error: "Missing params or invalid upload URL" },
             { status: 400 },
           );
         }
