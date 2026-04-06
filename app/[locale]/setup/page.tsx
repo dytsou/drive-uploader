@@ -73,7 +73,7 @@ export default function SetupPage() {
 
       if (res.ok) {
         localStorage.removeItem("zee_setup_temp");
-        setManualConfig(data.manualConfigData);
+        setManualConfig(data.manualConfigData || {});
         setWriteSuccess(data.restartNeeded);
         setStep(3);
       } else {
@@ -288,7 +288,7 @@ export default function SetupPage() {
                 )}
               </button>
             </div>
-          ) : step === 3 && manualConfig ? (
+          ) : step === 3 ? (
             <div className="space-y-8">
               <div className="flex flex-col items-center text-center">
                 <div
@@ -334,52 +334,54 @@ export default function SetupPage() {
                 </p>
               </div>
 
-              <div className="space-y-4">
-                {[
-                  {
-                    label: t("clientId"),
-                    value: manualConfig.GOOGLE_CLIENT_ID,
-                    key: "GOOGLE_CLIENT_ID",
-                  },
-                  {
-                    label: t("clientSecret"),
-                    value: manualConfig.GOOGLE_CLIENT_SECRET,
-                    key: "GOOGLE_CLIENT_SECRET",
-                  },
-                  {
-                    label: t("refreshToken"),
-                    value: manualConfig.GOOGLE_REFRESH_TOKEN,
-                    key: "GOOGLE_REFRESH_TOKEN",
-                  },
-                  {
-                    label: t("rootFolderId"),
-                    value: manualConfig.NEXT_PUBLIC_ROOT_FOLDER_ID,
-                    key: "NEXT_PUBLIC_ROOT_FOLDER_ID",
-                  },
-                ].map((item) => (
-                  <div key={item.key} className="space-y-2">
-                    <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                      {item.label}
-                    </label>
-                    <div className="relative group">
-                      <input
-                        readOnly
-                        value={item.value}
-                        className="w-full px-4 py-3 pr-20 rounded-xl border border-border bg-muted/30 font-mono text-xs focus:outline-none"
-                      />
-                      <button
-                        onClick={() => {
-                          navigator.clipboard.writeText(item.value);
-                          alert(t("copied"), { title: t("success") });
-                        }}
-                        className="absolute right-2 top-1.5 px-3 py-1.5 rounded-lg bg-background border border-border text-xs font-medium hover:bg-muted transition-colors"
-                      >
-                        {t("copy")}
-                      </button>
+              {!writeSuccess && (
+                <div className="space-y-4">
+                  {[
+                    {
+                      label: t("clientId"),
+                      value: manualConfig?.GOOGLE_CLIENT_ID,
+                      key: "GOOGLE_CLIENT_ID",
+                    },
+                    {
+                      label: t("clientSecret"),
+                      value: manualConfig?.GOOGLE_CLIENT_SECRET,
+                      key: "GOOGLE_CLIENT_SECRET",
+                    },
+                    {
+                      label: t("refreshToken"),
+                      value: manualConfig?.GOOGLE_REFRESH_TOKEN,
+                      key: "GOOGLE_REFRESH_TOKEN",
+                    },
+                    {
+                      label: t("rootFolderId"),
+                      value: manualConfig?.NEXT_PUBLIC_ROOT_FOLDER_ID,
+                      key: "NEXT_PUBLIC_ROOT_FOLDER_ID",
+                    },
+                  ].map((item) => (
+                    <div key={item.key} className="space-y-2">
+                      <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                        {item.label}
+                      </label>
+                      <div className="relative group">
+                        <input
+                          readOnly
+                          value={item.value || ""}
+                          className="w-full px-4 py-3 pr-20 rounded-xl border border-border bg-muted/30 font-mono text-xs focus:outline-none"
+                        />
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(item.value || "");
+                            alert(t("copied"), { title: t("success") });
+                          }}
+                          className="absolute right-2 top-1.5 px-3 py-1.5 rounded-lg bg-background border border-border text-xs font-medium hover:bg-muted transition-colors"
+                        >
+                          {t("copy")}
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
 
               {!writeSuccess && (
                 <div className="p-4 rounded-xl bg-blue-500/5 border border-blue-500/10">

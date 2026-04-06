@@ -141,12 +141,14 @@ export const POST = createPublicRoute(
         );
       }
 
-      const manualConfigData = {
-        GOOGLE_CLIENT_ID: clientId,
-        GOOGLE_CLIENT_SECRET: clientSecret,
-        GOOGLE_REFRESH_TOKEN: tokenData.refresh_token,
-        NEXT_PUBLIC_ROOT_FOLDER_ID: rootFolderId,
-      };
+      const manualConfigData = writeSuccess
+        ? null
+        : {
+            GOOGLE_CLIENT_ID: clientId,
+            GOOGLE_CLIENT_SECRET: clientSecret,
+            GOOGLE_REFRESH_TOKEN: tokenData.refresh_token,
+            NEXT_PUBLIC_ROOT_FOLDER_ID: rootFolderId,
+          };
 
       try {
         await invalidateAccessToken();

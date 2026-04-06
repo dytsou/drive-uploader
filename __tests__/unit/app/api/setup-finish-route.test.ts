@@ -158,4 +158,32 @@ describe("app/api/setup/finish route", () => {
     expect(response.status).toBe(403);
     expect(global.fetch).not.toHaveBeenCalled();
   });
+
+  it("does not return secrets when writing .env succeeds", async () => {
+    const response = await POST(
+      new NextRequest("http://localhost:3000/api/setup/finish", {
+        method: "POST",
+        headers: {
+          origin: "http://localhost:3000",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          clientId: "client-id",
+          clientSecret: "client-secret",
+          authCode: "auth-code",
+          redirectUri: "http://localhost:3000/setup",
+          rootFolderId: "root-folder",
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual(
+      expect.objectContaining({
+        restartNeeded: true,
+        manualConfigNeeded: false,
+        manualConfigData: null,
+      }),
+    );
+  });
 });
