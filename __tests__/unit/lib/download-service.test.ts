@@ -82,6 +82,23 @@ describe("lib/services/download", () => {
       });
     });
 
+    it("applies rate limiting to ranged requests too", async () => {
+      const request = new NextRequest(
+        "http://localhost:3000/api/download?fileId=file-1",
+        {
+          headers: { range: "bytes=0-1023", "x-forwarded-for": "10.0.0.5" },
+        },
+      );
+
+      await validateDownloadRequest(request);
+
+      expect(mockCheckRateLimit).toHaveBeenCalledWith(
+        request,
+        "API",
+        "10.0.0.5:file-1",
+      );
+    });
+
     it("returns 400 when the fileId is missing", async () => {
       const request = new NextRequest("http://localhost:3000/api/download");
 

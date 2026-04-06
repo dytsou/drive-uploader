@@ -31,6 +31,18 @@ export type DownloadErrorType = {
   status: number;
 };
 
+function getDownloadRateLimitIdentifier(
+  request: NextRequest,
+  fileId: string | null,
+): string {
+  const forwardedFor = request.headers.get("x-forwarded-for");
+  const requester = forwardedFor
+    ? forwardedFor.split(",")[0].trim()
+    : "127.0.0.1";
+
+  return `${requester}:${fileId || "unknown"}`;
+}
+
 function createEmptyDownloadContext(): DownloadContext {
   return {
     fileId: "",
@@ -51,16 +63,18 @@ export async function validateDownloadRequest(request: NextRequest): Promise<{
   const shareToken = searchParams.get("share_token");
   const accessTokenParam = searchParams.get("access_token");
   const range = request.headers.get("range");
-
-  if (!range) {
-    const { success } = await checkRateLimit(request, "DOWNLOAD");
-    if (!success) {
-      return {
-        context: createEmptyDownloadContext(),
-        session: null,
-        error: { error: ERROR_MESSAGES.DOWNLOAD_LIMIT_EXCEEDED, status: 429 },
-      };
-    }
+  const rateLimitType = range ? "API" : "DOWNLOAD";
+  const { success } = await checkRateLimit(
+    request,
+    rateLimitType,
+    getDownloadRateLimitIdentifier(request, fileId),
+  );
+  if (!success) {
+    return {
+      context: createEmptyDownloadContext(),
+      session: null,
+      error: { error: ERROR_MESSAGES.DOWNLOAD_LIMIT_EXCEEDED, status: 429 },
+    };
   }
 
   const session = await auth();

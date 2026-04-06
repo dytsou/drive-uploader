@@ -12,7 +12,6 @@ export const dynamic = "force-dynamic";
 export const GET = createPublicRoute(
   async () => {
     const headersList = await headers();
-    const userAgent = headersList.get("user-agent") || "unknown";
 
     const [dbHealth, cacheHealth, driveHealth] = await Promise.all([
       checkDatabaseHealth(),
@@ -21,21 +20,15 @@ export const GET = createPublicRoute(
     ]);
 
     const tempHasError =
-      dbHealth.status === "unhealthy" ||
-      cacheHealth.status === "unhealthy";
+      dbHealth.status === "unhealthy" || cacheHealth.status === "unhealthy";
 
     const healthData = {
       status: tempHasError ? "error" : "ok",
       timestamp: new Date().toISOString(),
-      uptime: process.uptime(),
-      environment: process.env.NODE_ENV,
       services: {
-        database: dbHealth,
-        cache: cacheHealth,
-        google_drive: driveHealth,
-      },
-      meta: {
-        userAgent,
+        database: dbHealth.status,
+        cache: cacheHealth.status,
+        google_drive: driveHealth.status,
       },
     };
 
@@ -43,8 +36,9 @@ export const GET = createPublicRoute(
       status: tempHasError ? 503 : 200,
       headers: {
         "Cache-Control": "no-store, no-cache, must-revalidate",
+        Vary: headersList.get("origin") ? "Origin" : "Accept",
       },
     });
   },
-  { rateLimit: false },
+  { rateLimit: "API" },
 );
