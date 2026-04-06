@@ -27,6 +27,8 @@ import {
   DEFAULT_APP_CONFIG,
   getAppConfig,
   getPublicAppConfig,
+  isHashedLocalStoragePassword,
+  sanitizeAdminAppConfig,
   updateAppConfig,
 } from "@/lib/app-config";
 
@@ -120,5 +122,30 @@ describe("lib/app-config", () => {
     const result = await getAppConfig();
 
     expect(result.appName).toBe(DEFAULT_APP_CONFIG.appName);
+  });
+
+  it("hashes local storage passwords before persisting config", async () => {
+    const result = await updateAppConfig({
+      localStoragePassword: "super-secret-password",
+    });
+
+    expect(result.localStoragePassword).not.toBe("super-secret-password");
+    expect(isHashedLocalStoragePassword(result.localStoragePassword)).toBe(
+      true,
+    );
+    expect(mockUpsert).toHaveBeenCalledWith({
+      where: { key: "zee-index:config" },
+      update: { value: JSON.stringify(result) },
+      create: { key: "zee-index:config", value: JSON.stringify(result) },
+    });
+  });
+
+  it("redacts local storage password for admin api responses", () => {
+    expect(
+      sanitizeAdminAppConfig({
+        ...DEFAULT_APP_CONFIG,
+        localStoragePassword: "$2b$10$hashed-secret-value",
+      }).localStoragePassword,
+    ).toBe("");
   });
 });

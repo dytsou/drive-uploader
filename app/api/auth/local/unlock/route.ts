@@ -4,6 +4,7 @@ import { SignJWT } from "jose";
 import { db } from "@/lib/db";
 import bcrypt from "bcryptjs";
 import { getLocalStorageAuthSecret } from "@/lib/local-auth-secret";
+import { isHashedLocalStoragePassword } from "@/lib/app-config";
 
 export async function POST(req: NextRequest) {
   try {
@@ -30,7 +31,11 @@ export async function POST(req: NextRequest) {
     if (dbProtected && dbProtected.password) {
       isPasswordCorrect = await bcrypt.compare(password, dbProtected.password);
     } else if (config.localStorageAuthEnabled && config.localStoragePassword) {
-      isPasswordCorrect = password === config.localStoragePassword;
+      isPasswordCorrect = isHashedLocalStoragePassword(
+        config.localStoragePassword,
+      )
+        ? await bcrypt.compare(password, config.localStoragePassword)
+        : password === config.localStoragePassword;
     } else {
       return NextResponse.json({ success: true, message: "Not protected" });
     }

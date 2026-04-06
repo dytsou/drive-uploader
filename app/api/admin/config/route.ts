@@ -3,6 +3,7 @@ import { createAdminRoute } from "@/lib/api-middleware";
 import {
   appConfigUpdateSchema,
   getAppConfig,
+  sanitizeAdminAppConfig,
   updateAppConfig,
 } from "@/lib/app-config";
 
@@ -11,7 +12,7 @@ export const dynamic = "force-dynamic";
 export const GET = createAdminRoute(async () => {
   try {
     const config = await getAppConfig();
-    return NextResponse.json(config);
+    return NextResponse.json(sanitizeAdminAppConfig(config));
   } catch (error) {
     console.error("Config fetch error:", error);
     return NextResponse.json(
@@ -24,13 +25,11 @@ export const GET = createAdminRoute(async () => {
 export const POST = createAdminRoute(
   async ({ body }) => {
     try {
-      console.log("[Admin Config] Update request:", body);
       const updatedConfig = await updateAppConfig(body);
-      console.log("[Admin Config] New config saved:", updatedConfig);
 
       return NextResponse.json({
         message: "Config updated",
-        config: updatedConfig,
+        config: sanitizeAdminAppConfig(updatedConfig),
       });
     } catch (error) {
       console.error("Config update error:", error);

@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { kv } from "@/lib/kv";
+import bcrypt from "bcryptjs";
 import {
   APP_CONFIG_KEY,
   appConfigSchema,
@@ -9,6 +10,7 @@ import {
   type AppConfigUpdate,
   type PublicAppConfig,
 } from "@/lib/app-config.shared";
+const BCRYPT_HASH_PATTERN = /^\$2[aby]\$\d{2}\$/;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -51,6 +53,17 @@ function parseCachedConfigValue(value: unknown): AppConfig | null {
   return result.success ? result.data : null;
 }
 
+export function isHashedLocalStoragePassword(value: string): boolean {
+  return BCRYPT_HASH_PATTERN.test(value);
+}
+
+export function sanitizeAdminAppConfig(config: AppConfig): AppConfig {
+  return {
+    ...config,
+    localStoragePassword: "",
+  };
+}
+
 export async function getAppConfig(): Promise<AppConfig> {
   const cached = parseCachedConfigValue(await kv.get(APP_CONFIG_KEY));
   if (cached) {
@@ -76,9 +89,26 @@ export async function updateAppConfig(
   update: AppConfigUpdate,
 ): Promise<AppConfig> {
   const currentConfig = await getAppConfig();
+  const normalizedUpdate = { ...update };
+
+  if (typeof normalizedUpdate.localStoragePassword === "string") {
+    const trimmedPassword = normalizedUpdate.localStoragePassword.trim();
+
+    if (!trimmedPassword) {
+      normalizedUpdate.localStoragePassword = "";
+    } else if (!isHashedLocalStoragePassword(trimmedPassword)) {
+      normalizedUpdate.localStoragePassword = await bcrypt.hash(
+        trimmedPassword,
+        10,
+      );
+    } else {
+      normalizedUpdate.localStoragePassword = trimmedPassword;
+    }
+  }
+
   const nextConfig = appConfigSchema.parse({
     ...currentConfig,
-    ...update,
+    ...normalizedUpdate,
   });
 
   await db.adminConfig.upsert({

@@ -1,10 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 
-const { mockGetAppConfig, mockUpdateAppConfig } = vi.hoisted(() => ({
-  mockGetAppConfig: vi.fn(),
-  mockUpdateAppConfig: vi.fn(),
-}));
+const { mockGetAppConfig, mockUpdateAppConfig, mockSanitizeAdminAppConfig } =
+  vi.hoisted(() => ({
+    mockGetAppConfig: vi.fn(),
+    mockUpdateAppConfig: vi.fn(),
+    mockSanitizeAdminAppConfig: vi.fn((config) => ({
+      ...config,
+      localStoragePassword: "",
+    })),
+  }));
 
 vi.mock("@/lib/api-middleware", () => ({
   createAdminRoute: (
@@ -28,6 +33,7 @@ vi.mock("@/lib/app-config", () => ({
   appConfigUpdateSchema: {},
   getAppConfig: mockGetAppConfig,
   updateAppConfig: mockUpdateAppConfig,
+  sanitizeAdminAppConfig: mockSanitizeAdminAppConfig,
 }));
 
 import { GET, POST } from "@/app/api/admin/config/route";
@@ -66,7 +72,9 @@ describe("app/api/admin/config route", () => {
       logoUrl: "",
       faviconUrl: "",
       primaryColor: "",
+      localStoragePassword: "",
     });
+    expect(mockSanitizeAdminAppConfig).toHaveBeenCalled();
   });
 
   it("persists partial updates as merged config", async () => {
@@ -95,6 +103,7 @@ describe("app/api/admin/config route", () => {
         logoUrl: "https://example.com/logo.png",
         faviconUrl: "",
         primaryColor: "#112233",
+        localStoragePassword: "",
       },
     });
   });
