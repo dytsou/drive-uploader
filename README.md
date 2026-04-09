@@ -673,10 +673,11 @@ Zee-Index includes comprehensive security headers:
 
 Zee-Index supports multiple languages via `next-intl`:
 
-| Language      | Code | Status      |
-| ------------- | ---- | ----------- |
-| 🇬🇧 English    | `en` | ✅ Complete |
-| 🇮🇩 Indonesian | `id` | ✅ Complete |
+| Language                 | Code    | Status      |
+| ------------------------ | ------- | ----------- |
+| 🇬🇧 English               | `en`    | ✅ Complete |
+| 🇮🇩 Indonesian            | `id`    | ✅ Complete |
+| 🇹🇼 Chinese (Traditional) | `zh-TW` | ✅ Complete |
 
 **Adding a new language:**
 

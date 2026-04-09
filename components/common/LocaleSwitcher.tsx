@@ -4,6 +4,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { usePathname, useRouter } from "next/navigation";
 import { Languages } from "lucide-react";
 import { useTransition } from "react";
+import { getLocaleDisplayCode } from "@/lib/i18n-config";
 
 export default function LocaleSwitcher() {
   const t = useTranslations("LocaleSwitcher");
@@ -13,7 +14,7 @@ export default function LocaleSwitcher() {
   const [isPending, startTransition] = useTransition();
 
   const toggleLocale = () => {
-    const nextLocale = locale === "en" ? "id" : "en";
+    const nextLocale = locale === "en" ? "zh-TW" : "en";
     const segments = pathname.split("/");
     segments[1] = nextLocale;
     const newPath = segments.join("/");
@@ -32,7 +33,7 @@ export default function LocaleSwitcher() {
     >
       <Languages size={20} />
       <span className="absolute -bottom-1 -right-1 text-[10px] font-bold uppercase bg-background border rounded px-0.5 text-foreground leading-none">
-        {locale}
+        {getLocaleDisplayCode(locale)}
       </span>
     </button>
   );
