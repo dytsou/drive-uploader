@@ -5,7 +5,6 @@ import {
   Share2,
   Upload,
   CheckSquare,
-  Info,
   LayoutTemplate,
   UploadCloud,
   Home,
@@ -204,15 +203,6 @@ export default function FileBrowserHeader({
             </button>
 
             <div className="w-px h-6 bg-border mx-1 hidden sm:block shrink-0"></div>
-
-            <button
-              onClick={onDetailsClick}
-              disabled={!activeFileId}
-              className="p-2 rounded-lg bg-card border hover:bg-accent transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed hidden sm:flex items-center justify-center shrink-0"
-              title={t("viewDetails")}
-            >
-              <Info size={18} />
-            </button>
 
             <button
               onClick={onToggleBulkMode}
