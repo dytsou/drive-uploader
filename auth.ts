@@ -49,16 +49,29 @@ async function resolveRole(
     where: { email: normalizedEmail },
   });
 
-  const [isRedisAdmin, isRedisEditor] = await Promise.all([
+  let [adminCount, isRedisAdmin, isRedisEditor] = await Promise.all([
+    kv.scard(REDIS_KEYS.ADMIN_USERS),
     kv.sismember(REDIS_KEYS.ADMIN_USERS, normalizedEmail),
     kv.sismember(REDIS_KEYS.ADMIN_EDITORS, normalizedEmail),
   ]);
 
-  const isAdmin =
-    dbUser?.role === "ADMIN" ||
-    normalizedEnvAdmins.includes(normalizedEmail) ||
-    isRedisAdmin === 1;
+  // Bootstrap: if no admins exist yet, seed from ADMIN_EMAILS once.
+  // After seeding, roles are managed via the admin API (Redis sets).
+  if (adminCount === 0 && normalizedEnvAdmins.length > 0) {
+    try {
+      await kv.sadd(REDIS_KEYS.ADMIN_USERS, ...normalizedEnvAdmins);
+      adminCount = normalizedEnvAdmins.length;
+      isRedisAdmin = normalizedEnvAdmins.includes(normalizedEmail) ? 1 : 0;
+      logger.warn(
+        { count: normalizedEnvAdmins.length },
+        "[Auth] Seeded ADMIN_USERS from ADMIN_EMAILS (bootstrap)",
+      );
+    } catch (err) {
+      logger.error({ err }, "[Auth] Failed to seed ADMIN_USERS from env");
+    }
+  }
 
+  const isAdmin = dbUser?.role === "ADMIN" || isRedisAdmin === 1;
   const isEditor = dbUser?.role === "EDITOR" || isRedisEditor === 1;
 
   if (isAdmin) return "ADMIN";
@@ -165,11 +178,29 @@ const authConfig: NextAuthConfig = {
 
           const isAdminEnv = normalizedEnvAdmins.includes(normalizedInputEmail);
           const isAdminDb = dbUser?.role === "ADMIN";
-          const isRedisAdmin = await kv.sismember(
-            REDIS_KEYS.ADMIN_USERS,
-            normalizedInputEmail,
-          );
-          const isAdmin = isAdminDb || isAdminEnv || isRedisAdmin === 1;
+          const [adminCount, isRedisAdmin] = await Promise.all([
+            kv.scard(REDIS_KEYS.ADMIN_USERS),
+            kv.sismember(REDIS_KEYS.ADMIN_USERS, normalizedInputEmail),
+          ]);
+
+          // Same bootstrap behavior as resolveRole(): first admin can be seeded
+          // from ADMIN_EMAILS, then all ongoing management uses admin API.
+          let isAdmin = isAdminDb || isRedisAdmin === 1;
+          if (adminCount === 0 && isAdminEnv) {
+            try {
+              await kv.sadd(REDIS_KEYS.ADMIN_USERS, ...normalizedEnvAdmins);
+              isAdmin = true;
+              logger.warn(
+                { count: normalizedEnvAdmins.length },
+                "[Auth] Seeded ADMIN_USERS from ADMIN_EMAILS (bootstrap)",
+              );
+            } catch (err) {
+              logger.error(
+                { err },
+                "[Auth] Failed to seed ADMIN_USERS from env",
+              );
+            }
+          }
 
           const envPassHash = process.env.ADMIN_PASSWORD_HASH || "";
           const envPass = (process.env.ADMIN_PASSWORD || "")
