@@ -76,11 +76,15 @@ RUN set -eux; \
 # Install prisma CLI specifically for migrations in entrypoint (much smaller than full node_modules)
 RUN npm install -g prisma@5.22.0
 
+# Next standalone trace does not include bcryptjs; hash-password.sh needs it
+RUN mkdir -p /app/hash-tool && cd /app/hash-tool && npm install bcryptjs@3.0.2 --omit=dev --no-package-lock && chown -R nextjs:nodejs /app/hash-tool
+
 # Copy necessary files from builder
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
+COPY --from=builder --chown=nextjs:nodejs /app/scripts ./scripts
 
 # Note: Standalone mode already includes necessary node_modules in .next/standalone/node_modules
 # We no longer need to copy the entire /app/node_modules from builder.

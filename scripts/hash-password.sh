@@ -8,6 +8,11 @@ if [ -z "$1" ]; then
   exit 1
 fi
 
+# Production Docker image installs bcryptjs under /app/hash-tool (standalone bundle omits it)
+if [ -d /app/hash-tool/node_modules/bcryptjs ]; then
+  export NODE_PATH=/app/hash-tool/node_modules
+fi
+
 node -e "
 const bcrypt = require('bcryptjs');
 const hash = bcrypt.hashSync('$1', 10);
