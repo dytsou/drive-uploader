@@ -3,6 +3,9 @@ import { z } from "zod";
 const envSchema = z.object({
   GOOGLE_CLIENT_ID: z.string().optional().or(z.literal("")),
   GOOGLE_CLIENT_SECRET: z.string().optional().or(z.literal("")),
+  GOOGLE_SERVICE_ACCOUNT_EMAIL: z.string().optional().or(z.literal("")),
+  GOOGLE_SERVICE_ACCOUNT_KEY: z.string().optional().or(z.literal("")),
+  GOOGLE_DRIVE_ROOT_FOLDER_ID: z.string().optional().or(z.literal("")),
   NEXT_PUBLIC_ROOT_FOLDER_ID: z.string().optional().or(z.literal("")),
   NEXT_PUBLIC_ROOT_FOLDER_NAME: z.string().default("Home"),
 
@@ -108,6 +111,9 @@ export const env = validateOnStartup();
 export const config = {
   googleClientId: env.GOOGLE_CLIENT_ID,
   googleClientSecret: env.GOOGLE_CLIENT_SECRET,
+  googleServiceAccountEmail: env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+  googleServiceAccountKey: env.GOOGLE_SERVICE_ACCOUNT_KEY,
+  googleDriveRootFolderId: env.GOOGLE_DRIVE_ROOT_FOLDER_ID,
   googleRefreshToken: env.GOOGLE_REFRESH_TOKEN,
   rootFolderId: env.NEXT_PUBLIC_ROOT_FOLDER_ID,
   rootFolderName: env.NEXT_PUBLIC_ROOT_FOLDER_NAME,

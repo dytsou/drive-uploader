@@ -799,9 +799,7 @@ components:
           type: string
         role:
           type: string
-          enum: [USER, ADMIN, GUEST]
-        isGuest:
-          type: boolean
+          enum: [USER, ADMIN, EDITOR, GUEST]
 
     ShareLink:
       type: object
@@ -830,8 +828,6 @@ components:
       type: object
       properties:
         hideAuthor:
-          type: boolean
-        disableGuestLogin:
           type: boolean
         appName:
           type: string

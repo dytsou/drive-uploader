@@ -1,6 +1,16 @@
 # Stage 1: Base
 FROM node:20-alpine AS base
-RUN apk add --no-cache libc6-compat openssl
+RUN set -eux; \
+  for i in 1 2 3 4 5; do \
+  if apk add --no-cache libc6-compat openssl; then \
+  break; \
+  fi; \
+  if [ "$i" -eq 5 ]; then \
+  apk add --no-cache libc6-compat openssl3; \
+  break; \
+  fi; \
+  sleep "$((i * 2))"; \
+  done
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable && corepack prepare pnpm@latest --activate
@@ -49,9 +59,19 @@ ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
 RUN addgroup --system --gid 1001 nodejs && \
-    adduser --system --uid 1001 nextjs
+  adduser --system --uid 1001 nextjs
 
-RUN apk add --no-cache curl dumb-init openssl postgresql-client
+RUN set -eux; \
+  for i in 1 2 3 4 5; do \
+  if apk add --no-cache curl dumb-init postgresql-client openssl; then \
+  break; \
+  fi; \
+  if [ "$i" -eq 5 ]; then \
+  apk add --no-cache curl dumb-init postgresql-client openssl3; \
+  break; \
+  fi; \
+  sleep "$((i * 2))"; \
+  done
 
 # Install prisma CLI specifically for migrations in entrypoint (much smaller than full node_modules)
 RUN npm install -g prisma@5.22.0
@@ -92,8 +112,8 @@ if [ -d "prisma/migrations" ]; then prisma migrate deploy; else prisma db push -
 exec "$@"
 ENTRY
 RUN tr -d '\r' < /app/entrypoint.sh > /app/entrypoint.sh.fixed && \
-    mv /app/entrypoint.sh.fixed /app/entrypoint.sh && \
-    chmod +x /app/entrypoint.sh
+  mv /app/entrypoint.sh.fixed /app/entrypoint.sh && \
+  chmod +x /app/entrypoint.sh
 
 USER nextjs
 
@@ -102,7 +122,7 @@ ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD curl -f http://localhost:3000/api/health || exit 1
+  CMD curl -f http://localhost:3000/api/health || exit 1
 
 ENTRYPOINT ["dumb-init", "--", "/app/entrypoint.sh"]
-CMD ["node", "server.js"]
+CMD ["node", "server.js"]

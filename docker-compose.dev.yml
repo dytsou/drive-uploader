@@ -40,6 +40,7 @@ services:
     environment:
       - REDIS_URL=redis://redis:6379
       - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/zee_index?schema=public
+      - CI=true
     dns:
       - 8.8.8.8
       - 1.1.1.1

@@ -27,7 +27,10 @@ import { getAppCredentials } from "@/lib/config";
 
 async function getCredentialHash(): Promise<string> {
   const creds = await getAppCredentials();
-  if (!creds || !creds.refreshToken) return "default";
+  if (!creds) return "default";
+  if (creds.mode === "service_account") {
+    return creds.serviceAccountEmail.slice(-10);
+  }
   return creds.refreshToken.slice(-10);
 }
 

@@ -5,10 +5,22 @@ import { useRouter } from "next/navigation";
 import { useAlert } from "@/components/providers/ModalProvider";
 import { useTranslations } from "next-intl";
 
+const MANUAL_CONFIG_KEY_ORDER = [
+  "GOOGLE_SERVICE_ACCOUNT_EMAIL",
+  "GOOGLE_SERVICE_ACCOUNT_KEY",
+  "GOOGLE_CLIENT_ID",
+  "GOOGLE_CLIENT_SECRET",
+  "GOOGLE_REFRESH_TOKEN",
+  "NEXT_PUBLIC_ROOT_FOLDER_ID",
+] as const;
+
 export default function SetupPage() {
   const router = useRouter();
   const { alert } = useAlert();
   const t = useTranslations("SetupPage");
+  const [setupMode, setSetupMode] = useState<"oauth" | "serviceAccount">(
+    "serviceAccount",
+  );
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [manualConfig, setManualConfig] = useState<Record<
@@ -22,8 +34,16 @@ export default function SetupPage() {
     rootFolderId: "",
     authCode: "",
   });
+  const [saForm, setSaForm] = useState({
+    clientId: "",
+    clientSecret: "",
+    serviceAccountEmail: "",
+    serviceAccountKey: "",
+    rootFolderId: "",
+  });
 
   useEffect(() => {
+    if (setupMode !== "oauth") return;
     if (window.location.search.includes("code=") && step === 1) {
       const urlParams = new URLSearchParams(window.location.search);
       const code = urlParams.get("code");
@@ -37,7 +57,7 @@ export default function SetupPage() {
         window.history.replaceState({}, document.title, "/setup");
       }
     }
-  }, [step]);
+  }, [step, setupMode]);
 
   const handleAuthorize = async () => {
     if (!formData.clientId || !formData.clientSecret) {
@@ -92,41 +112,299 @@ export default function SetupPage() {
     }
   };
 
+  const handleFinishServiceAccount = async () => {
+    if (
+      !saForm.serviceAccountEmail.trim() ||
+      !saForm.serviceAccountKey.trim() ||
+      !saForm.rootFolderId.trim()
+    ) {
+      await alert(t("fillServiceAccountFields"), {
+        title: t("incompleteInput"),
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await fetch("/api/setup/finish-service-account", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          serviceAccountEmail: saForm.serviceAccountEmail.trim(),
+          serviceAccountKey: saForm.serviceAccountKey,
+          rootFolderId: saForm.rootFolderId.trim(),
+          clientId: saForm.clientId.trim() || undefined,
+          clientSecret: saForm.clientSecret.trim() || undefined,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        setManualConfig(data.manualConfigData);
+        setWriteSuccess(data.restartNeeded);
+        setStep(2);
+      } else {
+        await alert(`${t("setupFailed")}: ${data.error}`, {
+          title: t("setupFailed"),
+          variant: "destructive",
+        });
+      }
+    } catch {
+      await alert(t("connectionError"), {
+        title: "Error",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const setMode = (mode: "oauth" | "serviceAccount") => {
+    setSetupMode(mode);
+    setStep(1);
+    setManualConfig(null);
+  };
+
+  const manualConfigLabel = (key: string): string => {
+    switch (key) {
+      case "GOOGLE_SERVICE_ACCOUNT_EMAIL":
+        return t("serviceAccountEmail");
+      case "GOOGLE_SERVICE_ACCOUNT_KEY":
+        return t("privateKey");
+      case "GOOGLE_CLIENT_ID":
+        return t("clientId");
+      case "GOOGLE_CLIENT_SECRET":
+        return t("clientSecret");
+      case "GOOGLE_REFRESH_TOKEN":
+        return t("refreshToken");
+      case "NEXT_PUBLIC_ROOT_FOLDER_ID":
+        return t("rootFolderId");
+      default:
+        return key;
+    }
+  };
+
+  const orderedManualEntries = (config: Record<string, string>) => {
+    const keys = new Set(Object.keys(config));
+    const orderSet = new Set<string>(MANUAL_CONFIG_KEY_ORDER);
+    const ordered: string[] = [];
+    for (const k of MANUAL_CONFIG_KEY_ORDER) {
+      if (keys.has(k)) ordered.push(k);
+    }
+    for (const k of Object.keys(config)) {
+      if (!orderSet.has(k)) ordered.push(k);
+    }
+    return ordered.map((key) => ({
+      key,
+      label: manualConfigLabel(key),
+      value: config[key] ?? "",
+    }));
+  };
+
+  const showSummary =
+    manualConfig &&
+    ((setupMode === "oauth" && step === 3) ||
+      (setupMode === "serviceAccount" && step === 2));
+
   return (
     <div className="h-screen overflow-hidden bg-background text-foreground flex flex-col">
       <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-purple-500/5 pointer-events-none" />
 
       <main className="relative flex-1 flex items-center justify-center px-6">
         <div className="w-full max-w-lg">
-          <div className="flex items-center gap-4 mb-10">
-            <div
-              className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium transition-all ${step >= 1 ? "bg-blue-500 text-white" : "bg-muted text-muted-foreground"}`}
-            >
-              1
+          {setupMode === "oauth" ? (
+            <div className="flex items-center gap-4 mb-10">
+              <div
+                className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium transition-all ${step >= 1 ? "bg-blue-500 text-white" : "bg-muted text-muted-foreground"}`}
+              >
+                1
+              </div>
+              <div
+                className={`flex-1 h-0.5 transition-all ${step >= 2 ? "bg-blue-500" : "bg-border"}`}
+              />
+              <div
+                className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium transition-all ${step >= 2 ? "bg-blue-500 text-white" : "bg-muted text-muted-foreground"}`}
+              >
+                2
+              </div>
+              <div
+                className={`flex-1 h-0.5 transition-all ${step >= 3 ? "bg-blue-500" : "bg-border"}`}
+              />
+              <div
+                className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium transition-all ${step >= 3 ? "bg-blue-500 text-white" : "bg-muted text-muted-foreground"}`}
+              >
+                3
+              </div>
             </div>
-            <div
-              className={`flex-1 h-0.5 transition-all ${step >= 2 ? "bg-blue-500" : "bg-border"}`}
-            />
-            <div
-              className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium transition-all ${step >= 2 ? "bg-blue-500 text-white" : "bg-muted text-muted-foreground"}`}
-            >
-              2
+          ) : (
+            <div className="flex items-center gap-4 mb-10">
+              <div
+                className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium transition-all ${step >= 1 ? "bg-blue-500 text-white" : "bg-muted text-muted-foreground"}`}
+              >
+                1
+              </div>
+              <div
+                className={`flex-1 h-0.5 transition-all ${step >= 2 ? "bg-blue-500" : "bg-border"}`}
+              />
+              <div
+                className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium transition-all ${step >= 2 ? "bg-blue-500 text-white" : "bg-muted text-muted-foreground"}`}
+              >
+                2
+              </div>
             </div>
-            <div
-              className={`flex-1 h-0.5 transition-all ${step >= 3 ? "bg-blue-500" : "bg-border"}`}
-            />
-            <div
-              className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium transition-all ${step >= 3 ? "bg-blue-500 text-white" : "bg-muted text-muted-foreground"}`}
-            >
-              3
-            </div>
-          </div>
+          )}
 
-          {step === 1 ? (
+          {step === 1 && setupMode === "serviceAccount" ? (
+            <div className="space-y-8">
+              <div>
+                <h1 className="text-2xl font-semibold mb-2">{t("title")}</h1>
+                <p className="text-muted-foreground">{t("subtitleSa")}</p>
+              </div>
+
+              <div className="flex rounded-xl border border-border p-1 bg-muted/30">
+                <button
+                  type="button"
+                  onClick={() => setMode("serviceAccount")}
+                  className="flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-colors bg-background shadow-sm"
+                >
+                  {t("modeServiceAccount")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMode("oauth")}
+                  className="flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-colors text-muted-foreground"
+                >
+                  {t("modeOAuth")}
+                </button>
+              </div>
+
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">
+                    {t("serviceAccountEmail")}
+                  </label>
+                  <input
+                    placeholder="name@project.iam.gserviceaccount.com"
+                    className="w-full px-4 py-3 rounded-xl border border-border bg-background/50 backdrop-blur-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
+                    value={saForm.serviceAccountEmail}
+                    onChange={(e) =>
+                      setSaForm({
+                        ...saForm,
+                        serviceAccountEmail: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">
+                    {t("privateKey")}
+                  </label>
+                  <textarea
+                    rows={6}
+                    placeholder="-----BEGIN PRIVATE KEY-----"
+                    className="w-full px-4 py-3 rounded-xl border border-border bg-background/50 backdrop-blur-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all font-mono text-xs"
+                    value={saForm.serviceAccountKey}
+                    onChange={(e) =>
+                      setSaForm({
+                        ...saForm,
+                        serviceAccountKey: e.target.value,
+                      })
+                    }
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {t("privateKeyHint")}
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">
+                    {t("rootFolderId")}
+                  </label>
+                  <input
+                    placeholder={t("rootFolderIdPlaceholder")}
+                    className="w-full px-4 py-3 rounded-xl border border-border bg-background/50 backdrop-blur-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
+                    value={saForm.rootFolderId}
+                    onChange={(e) =>
+                      setSaForm({ ...saForm, rootFolderId: e.target.value })
+                    }
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {t("rootFolderIdHint")}
+                    <span className="text-blue-500 font-mono">FOLDER_ID</span>
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-xl bg-muted/50 border border-border/50">
+                  <p className="text-sm font-medium mb-2">
+                    {t("nextAuthOptional")}
+                  </p>
+                  <p className="text-xs text-muted-foreground mb-4">
+                    {t("nextAuthOptionalDesc")}
+                  </p>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <label className="text-xs font-medium">
+                        {t("clientId")}
+                      </label>
+                      <input
+                        placeholder="xxxxx.apps.googleusercontent.com"
+                        className="w-full px-4 py-2 rounded-lg border border-border bg-background text-sm"
+                        value={saForm.clientId}
+                        onChange={(e) =>
+                          setSaForm({ ...saForm, clientId: e.target.value })
+                        }
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-medium">
+                        {t("clientSecret")}
+                      </label>
+                      <input
+                        type="password"
+                        placeholder="GOCSPX-xxxxx"
+                        className="w-full px-4 py-2 rounded-lg border border-border bg-background text-sm"
+                        value={saForm.clientSecret}
+                        onChange={(e) =>
+                          setSaForm({ ...saForm, clientSecret: e.target.value })
+                        }
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                onClick={handleFinishServiceAccount}
+                disabled={loading}
+                className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-6 py-3.5 rounded-xl font-medium transition-all shadow-lg shadow-green-500/25 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {loading ? t("processing") : t("finishSetup")}
+              </button>
+            </div>
+          ) : step === 1 && setupMode === "oauth" ? (
             <div className="space-y-8">
               <div>
                 <h1 className="text-2xl font-semibold mb-2">{t("title")}</h1>
                 <p className="text-muted-foreground">{t("subtitle")}</p>
+              </div>
+
+              <div className="flex rounded-xl border border-border p-1 bg-muted/30">
+                <button
+                  type="button"
+                  onClick={() => setMode("serviceAccount")}
+                  className="flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-colors text-muted-foreground"
+                >
+                  {t("modeServiceAccount")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMode("oauth")}
+                  className="flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-colors bg-background shadow-sm"
+                >
+                  {t("modeOAuth")}
+                </button>
               </div>
 
               <div className="space-y-6">
@@ -193,7 +471,7 @@ export default function SetupPage() {
                 {t("authorize")}
               </button>
             </div>
-          ) : step === 2 ? (
+          ) : setupMode === "oauth" && step === 2 ? (
             <div className="space-y-8">
               <div className="flex flex-col items-center text-center">
                 <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center mb-6 shadow-lg shadow-green-500/30">
@@ -288,7 +566,7 @@ export default function SetupPage() {
                 )}
               </button>
             </div>
-          ) : step === 3 ? (
+          ) : showSummary ? (
             <div className="space-y-8">
               <div className="flex flex-col items-center text-center">
                 <div
@@ -336,28 +614,7 @@ export default function SetupPage() {
 
               {!writeSuccess && (
                 <div className="space-y-4">
-                  {[
-                    {
-                      label: t("clientId"),
-                      value: manualConfig?.GOOGLE_CLIENT_ID,
-                      key: "GOOGLE_CLIENT_ID",
-                    },
-                    {
-                      label: t("clientSecret"),
-                      value: manualConfig?.GOOGLE_CLIENT_SECRET,
-                      key: "GOOGLE_CLIENT_SECRET",
-                    },
-                    {
-                      label: t("refreshToken"),
-                      value: manualConfig?.GOOGLE_REFRESH_TOKEN,
-                      key: "GOOGLE_REFRESH_TOKEN",
-                    },
-                    {
-                      label: t("rootFolderId"),
-                      value: manualConfig?.NEXT_PUBLIC_ROOT_FOLDER_ID,
-                      key: "NEXT_PUBLIC_ROOT_FOLDER_ID",
-                    },
-                  ].map((item) => (
+                  {orderedManualEntries(manualConfig!).map((item) => (
                     <div key={item.key} className="space-y-2">
                       <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                         {item.label}
@@ -365,12 +622,13 @@ export default function SetupPage() {
                       <div className="relative group">
                         <input
                           readOnly
-                          value={item.value || ""}
-                          className="w-full px-4 py-3 pr-20 rounded-xl border border-border bg-muted/30 font-mono text-xs focus:outline-none"
+                          value={item.value}
+                          className="w-full px-4 py-3 pr-20 rounded-xl border border-border bg-muted/30 font-mono text-xs focus:outline-none max-h-32 overflow-y-auto"
                         />
                         <button
+                          type="button"
                           onClick={() => {
-                            navigator.clipboard.writeText(item.value || "");
+                            navigator.clipboard.writeText(item.value);
                             alert(t("copied"), { title: t("success") });
                           }}
                           className="absolute right-2 top-1.5 px-3 py-1.5 rounded-lg bg-background border border-border text-xs font-medium hover:bg-muted transition-colors"
@@ -392,6 +650,7 @@ export default function SetupPage() {
               )}
 
               <button
+                type="button"
                 onClick={() => router.push("/")}
                 className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-6 py-3.5 rounded-xl font-medium transition-all shadow-lg shadow-blue-500/25 flex items-center justify-center gap-2"
               >

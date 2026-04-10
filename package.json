@@ -59,6 +59,7 @@
     "date-fns": "^4.1.0",
     "driver.js": "^1.4.0",
     "framer-motion": "^11.18.2",
+    "google-auth-library": "^10.6.2",
     "ioredis": "^5.4.2",
     "jose": "^5.4.0",
     "jszip": "^3.10.1",
