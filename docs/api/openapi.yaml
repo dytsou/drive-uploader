@@ -1,565 +1,1894 @@
-openapi: 3.1.0
+openapi: 3.0.0
 info:
   title: Zee-Index API
-  description: |
-    Core API documentation for Zee-Index - a self-hosted Google Drive CMS,
-    explorer, and streaming platform.
-
-    ## Authentication
-    Most endpoints require authentication via NextAuth.js session or folder-specific tokens.
-
-    ## Rate Limiting
-    - General API: 500 requests per minute
-    - Download API: 100 requests per hour
-    - Admin API: 50 requests per minute
-
-    ## Error Responses
-    Most errors follow this format:
-    ```json
-    {
-      "error": "Error message"
-    }
-    ```
-  version: 2.0.0
-  contact:
-    name: Zee-Index Support
-    url: https://github.com/ifauzeee/Zee-Index/issues
-  license:
-    name: AGPL-3.0
-    url: https://www.gnu.org/licenses/agpl-3.0.html
-
-servers:
-  - url: http://localhost:3000
-    description: Development server
-  - url: https://zee-index.duckdns.org
-    description: Production server
-
+  version: 0.0.0
 tags:
-  - name: Files
-    description: File and folder operations
-  - name: Auth
-    description: Authentication endpoints
-  - name: Admin
-    description: Admin-only operations
-  - name: Share
-    description: Share link management
   - name: Health
-    description: Health check endpoints
-
+  - name: Admin
+  - name: Files
+  - name: Auth
+  - name: Share
+  - name: FileRequests
+  - name: Setup
+  - name: Config
+  - name: Public
+  - name: Telemetry
+  - name: Cron
 paths:
-  # ==============================================================================
-  # HEALTH ENDPOINTS
-  # ==============================================================================
-  /api/health:
+  /api/admin/access-requests:
     get:
-      tags:
-        - Health
-      summary: Health check
-      description: Check the health status of the application and its dependencies
-      operationId: healthCheck
+      operationId: listAccessRequests
+      parameters: []
       responses:
-        "200":
-          description: All services healthy
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: Access is unauthorized.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/HealthResponse"
-        "503":
-          description: One or more services unhealthy
-
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Admin
+      security:
+        - ApiKeyAuth: []
+  /api/admin/activity-log:
+    get:
+      operationId: getActivityLogs
+      description: Get system activity logs.
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+          explode: false
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ActivityLog'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Admin
+  /api/admin/analytics:
+    get:
+      operationId: getAdminAnalytics
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Admin
+      security:
+        - ApiKeyAuth: []
+  /api/admin/analytics/enhanced:
+    get:
+      operationId: getAdminAnalyticsEnhanced
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Admin
+      security:
+        - ApiKeyAuth: []
+  /api/admin/analytics/track:
+    post:
+      operationId: trackAdminAnalytics
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+      tags:
+        - Admin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {}
+  /api/admin/audit:
+    get:
+      operationId: getAdminAudit
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Admin
+      security:
+        - ApiKeyAuth: []
+    delete:
+      operationId: clearAdminAudit
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Admin
+      security:
+        - ApiKeyAuth: []
+  /api/admin/cache-stats:
+    get:
+      operationId: getAdminCacheStats
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Admin
+      security:
+        - ApiKeyAuth: []
+  /api/admin/config:
+    get:
+      operationId: getConfig
+      description: Get current application configuration.
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppConfig'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Admin
+      security:
+        - ApiKeyAuth: []
+    post:
+      operationId: updateConfig
+      description: Update application configuration (Admin only).
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppConfig'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Admin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AppConfig'
+  /api/admin/drives/scan:
+    get:
+      operationId: scanAdminDrives
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Admin
+      security:
+        - ApiKeyAuth: []
+  /api/admin/editors:
+    get:
+      operationId: listEditors
+      description: Get list of editor email addresses.
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Admin
+      security:
+        - ApiKeyAuth: []
+    post:
+      operationId: addEditor
+      description: Add a new editor user.
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Admin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmailRequest'
+    delete:
+      operationId: removeEditor
+      description: Remove an editor user.
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Admin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmailRequest'
+  /api/admin/incidents:
+    get:
+      operationId: getAdminIncidents
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Admin
+      security:
+        - ApiKeyAuth: []
+  /api/admin/incidents/evaluate:
+    post:
+      operationId: evaluateAdminIncidents
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Admin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {}
+      security:
+        - ApiKeyAuth: []
+  /api/admin/logs:
+    get:
+      operationId: getAdminLogs
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Admin
+      security:
+        - ApiKeyAuth: []
+  /api/admin/logs/security:
+    get:
+      operationId: getAdminSecurityLogs
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Admin
+      security:
+        - ApiKeyAuth: []
+  /api/admin/manual-drives:
+    get:
+      operationId: listAdminManualDrives
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Admin
+      security:
+        - ApiKeyAuth: []
+    post:
+      operationId: addAdminManualDrive
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Admin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {}
+      security:
+        - ApiKeyAuth: []
+    delete:
+      operationId: deleteAdminManualDrive
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Admin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {}
+      security:
+        - ApiKeyAuth: []
+  /api/admin/protected-folders:
+    get:
+      operationId: listProtectedFolders
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Admin
+      security:
+        - ApiKeyAuth: []
+    post:
+      operationId: updateProtectedFolders
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Admin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {}
+      security:
+        - ApiKeyAuth: []
+    delete:
+      operationId: deleteProtectedFolder
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Admin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {}
+      security:
+        - ApiKeyAuth: []
+  /api/admin/stats:
+    get:
+      operationId: getAdminStats
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Admin
+      security:
+        - ApiKeyAuth: []
   /api/admin/system-health:
     get:
+      operationId: getAdminSystemHealth
+      description: Returns measured dependency health, latency summary, and 24h error counts for the admin dashboard.
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminSystemHealthResponse'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
       tags:
         - Admin
         - Health
-      summary: Read operational system health
-      description: Returns measured dependency health, latency summary, and 24h error counts for the admin dashboard
-      operationId: getAdminSystemHealth
       security:
-        - sessionAuth: []
+        - ApiKeyAuth: []
+  /api/admin/user-access:
+    get:
+      operationId: getUserAccess
+      parameters:
+        - name: email
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
       responses:
-        "200":
-          description: System health payload
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: Access is unauthorized.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/AdminSystemHealthResponse"
-
-  # ==============================================================================
-  # FILE ENDPOINTS
-  # ==============================================================================
-  /api/files:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Admin
+      security:
+        - ApiKeyAuth: []
+  /api/admin/user-password:
+    post:
+      operationId: rotateUserPassword
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Admin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {}
+      security:
+        - ApiKeyAuth: []
+  /api/admin/users:
     get:
+      operationId: listAdmins
+      description: Get list of admin email addresses.
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Admin
+      security:
+        - ApiKeyAuth: []
+    post:
+      operationId: addAdmin
+      description: Add a new admin user.
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Admin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmailRequest'
+    delete:
+      operationId: removeAdmin
+      description: Remove an admin user.
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Admin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmailRequest'
+  /api/archive-preview:
+    get:
+      operationId: archivePreview
+      parameters:
+        - name: fileId
+          in: query
+          required: true
+          schema:
+            type: string
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
       tags:
         - Files
-      summary: List files in a folder
-      description: Get a paginated list of files and folders within a specified folder
+      security:
+        - ApiKeyAuth: []
+  /api/auth/2fa/disable:
+    post:
+      operationId: disable2fa
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Auth
+      security:
+        - ApiKeyAuth: []
+  /api/auth/2fa/generate:
+    post:
+      operationId: generate2faSecret
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Auth
+      security:
+        - ApiKeyAuth: []
+  /api/auth/2fa/status:
+    get:
+      operationId: get2faStatus
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Auth
+      security:
+        - ApiKeyAuth: []
+  /api/auth/2fa/verify:
+    post:
+      operationId: verify2faCode
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {}
+      security:
+        - ApiKeyAuth: []
+  /api/auth/folder:
+    post:
+      operationId: authenticateFolder
+      description: Submit credentials to access a protected folder.
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthenticateFolderResponse'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthenticateFolderRequest'
+  /api/auth/local/check:
+    post:
+      operationId: localAuthCheck
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema: {}
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {}
+  /api/auth/local/logout:
+    post:
+      operationId: localAuthLogout
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Auth
+      security:
+        - ApiKeyAuth: []
+  /api/auth/local/unlock:
+    post:
+      operationId: localAuthUnlock
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {}
+  /api/auth/me:
+    get:
+      operationId: getCurrentUser
+      description: Get the currently authenticated user's information.
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Auth
+      security:
+        - ApiKeyAuth: []
+  /api/auth/status:
+    get:
+      operationId: getAuthStatus
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema: {}
+      tags:
+        - Auth
+  /api/auth/{nextauth}:
+    get:
+      operationId: nextAuthHandler
+      parameters:
+        - name: nextauth
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema: {}
+      tags:
+        - Auth
+  /api/bulk-download:
+    post:
+      operationId: bulkDownload
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Public
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {}
+      security:
+        - ApiKeyAuth: []
+  /api/clearcache:
+    post:
+      operationId: clearCache
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Admin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {}
+      security:
+        - ApiKeyAuth: []
+  /api/config:
+    get:
+      operationId: getConfigLegacy
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema: {}
+      tags:
+        - Config
+  /api/config/public:
+    get:
+      operationId: getPublicConfig
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema: {}
+      tags:
+        - Config
+  /api/cron/incident-monitor:
+    get:
+      operationId: cronIncidentMonitor
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Cron
+  /api/cron/storage-check:
+    get:
+      operationId: cronStorageCheck
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Cron
+  /api/cron/weekly-report:
+    get:
+      operationId: cronWeeklyReport
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Cron
+  /api/datausage:
+    get:
+      operationId: getDataUsage
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Telemetry
+      security:
+        - ApiKeyAuth: []
+  /api/download:
+    get:
+      operationId: downloadFile
+      description: Initiate file download from Google Drive.
+      parameters:
+        - name: fileId
+          in: query
+          required: true
+          schema:
+            type: string
+          explode: false
+        - name: share_token
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
+        - name: access_token
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema: {}
+        '302':
+          description: Redirection
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Files
+  /api/events:
+    get:
+      operationId: getEvents
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Admin
+      security:
+        - ApiKeyAuth: []
+  /api/file-request:
+    post:
+      operationId: createFileRequest
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - FileRequests
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FileRequestCreateRequest'
+  /api/file-request/upload:
+    post:
+      operationId: uploadToFileRequest
+      parameters:
+        - name: type
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/UploadMode'
+          explode: false
+        - name: token
+          in: query
+          required: true
+          schema:
+            type: string
+          explode: false
+        - name: uploadUrl
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
+        - name: content-range
+          in: header
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema: {}
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - FileRequests
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              anyOf:
+                - $ref: '#/components/schemas/FileRequestUploadInitRequest'
+                - type: string
+                  format: byte
+          application/octet-stream:
+            schema:
+              anyOf:
+                - $ref: '#/components/schemas/FileRequestUploadInitRequest'
+                - type: string
+                  format: byte
+  /api/file-request/{token}:
+    get:
+      operationId: getFileRequest
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema: {}
+      tags:
+        - FileRequests
+  /api/filedetails:
+    get:
+      operationId: getFileDetails
+      description: Get detailed metadata for a specific file.
+      parameters:
+        - name: fileId
+          in: query
+          required: true
+          schema:
+            type: string
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DriveFile'
+      tags:
+        - Files
+  /api/files:
+    get:
       operationId: listFiles
+      description: Get a paginated list of files and folders within a specified folder.
       parameters:
         - name: folderId
           in: query
           required: true
           schema:
             type: string
-          description: Google Drive folder ID
+          explode: false
         - name: pageSize
           in: query
+          required: false
           schema:
             type: integer
-            default: 50
-            minimum: 1
-            maximum: 100
-          description: Number of items per page
+            format: int32
+          explode: false
         - name: pageToken
           in: query
+          required: false
           schema:
             type: string
-          description: Token for pagination
+          explode: false
         - name: share_token
           in: query
+          required: false
           schema:
             type: string
-          description: Share token for public access
+          explode: false
       responses:
-        "200":
-          description: List of files
+        '200':
+          description: The request has succeeded.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/FileListResponse"
-        "401":
-          description: Unauthorized or folder protected
-        "404":
-          description: Folder not found
-
-  /api/filedetails:
-    get:
+                $ref: '#/components/schemas/FileListResponse'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
       tags:
         - Files
-      summary: Get file details
-      description: Get detailed metadata for a specific file
-      operationId: getFileDetails
+  /api/files/bulk-delete:
+    post:
+      operationId: bulkDeleteFiles
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Files
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {}
+      security:
+        - ApiKeyAuth: []
+  /api/files/bulk-move:
+    post:
+      operationId: bulkMoveFiles
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Files
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {}
+      security:
+        - ApiKeyAuth: []
+  /api/files/copy:
+    post:
+      operationId: copyFile
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Files
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {}
+      security:
+        - ApiKeyAuth: []
+  /api/files/delete:
+    delete:
+      operationId: deleteFile
+      description: Move file to trash (Admin only).
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Files
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeleteFileRequest'
+  /api/files/move:
+    post:
+      operationId: moveFile
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Files
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {}
+      security:
+        - ApiKeyAuth: []
+  /api/files/rename:
+    patch:
+      operationId: renameFile
+      description: Rename a file or folder (Admin only).
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Files
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RenameFileRequest'
+  /api/files/update:
+    patch:
+      operationId: updateFileMetadata
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Files
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {}
+      security:
+        - ApiKeyAuth: []
+  /api/files/update-media:
+    patch:
+      operationId: updateFileMedia
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Files
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {}
+      security:
+        - ApiKeyAuth: []
+  /api/files/upload:
+    post:
+      operationId: uploadFile
+      description: Upload a file to Google Drive (Admin only).
+      parameters:
+        - name: type
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/UploadMode'
+          explode: false
+        - name: uploadUrl
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
+        - name: parentId
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
+        - name: content-range
+          in: header
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Files
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              anyOf:
+                - $ref: '#/components/schemas/ResumableUploadInitBody'
+                - type: string
+                  format: byte
+          application/octet-stream:
+            schema:
+              anyOf:
+                - $ref: '#/components/schemas/ResumableUploadInitBody'
+                - type: string
+                  format: byte
+  /api/files/{fileId}/revisions:
+    get:
+      operationId: listFileRevisions
       parameters:
         - name: fileId
-          in: query
+          in: path
           required: true
           schema:
             type: string
       responses:
-        "200":
-          description: File details
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: Access is unauthorized.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/DriveFile"
-
-  /api/download:
-    get:
+                $ref: '#/components/schemas/Error'
       tags:
         - Files
-      summary: Download a file
-      description: Initiate file download from Google Drive
-      operationId: downloadFile
+      security:
+        - ApiKeyAuth: []
+  /api/folder/create:
+    post:
+      operationId: createFolder
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Files
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {}
+      security:
+        - ApiKeyAuth: []
+  /api/folderpath:
+    get:
+      operationId: getFolderPath
       parameters:
-        - name: fileId
+        - name: folderId
           in: query
           required: true
           schema:
             type: string
-        - name: share_token
-          in: query
-          schema:
-            type: string
-        - name: access_token
-          in: query
-          schema:
-            type: string
-          description: Folder access token for protected folders
+          explode: false
       responses:
-        "200":
-          description: File stream
-        "302":
-          description: Redirect to Google Drive download URL
-        "401":
-          description: Unauthorized
-        "404":
-          description: File not found
-
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema: {}
+      tags:
+        - Files
+  /api/health:
+    get:
+      operationId: healthCheck
+      description: Check the health status of the application and its dependencies.
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+        '503':
+          description: Service unavailable.
+      tags:
+        - Health
+  /api/metadata:
+    get:
+      operationId: getMetadata
+      parameters:
+        - name: url
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
+        - name: id
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema: {}
+      tags:
+        - Files
+  /api/og:
+    get:
+      operationId: getOpenGraphImage
+      parameters:
+        - name: title
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema: {}
+      tags:
+        - Public
+  /api/proxy-image:
+    get:
+      operationId: proxyImage
+      parameters:
+        - name: url
+          in: query
+          required: true
+          schema:
+            type: string
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema: {}
+      tags:
+        - Public
+  /api/request-access:
+    post:
+      operationId: requestFolderAccess
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccessRequestCreateRequest'
+      security:
+        - ApiKeyAuth: []
   /api/search:
     get:
-      tags:
-        - Files
-      summary: Search files
-      description: Search for files within a folder
       operationId: searchFiles
+      description: Search for files within a folder.
       parameters:
         - name: q
           in: query
           required: true
           schema:
             type: string
-          description: Search query
+          explode: false
         - name: folderId
           in: query
           required: true
           schema:
             type: string
+          explode: false
         - name: type
           in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/SearchType'
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DriveFile'
+      tags:
+        - Files
+  /api/search/global:
+    get:
+      operationId: globalSearch
+      parameters:
+        - name: q
+          in: query
+          required: true
           schema:
             type: string
-            enum: [image, video, audio, document, all]
+          explode: false
       responses:
-        "200":
-          description: Search results
+        '200':
+          description: The request has succeeded.
           content:
             application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/DriveFile"
-
-  /api/files/upload:
+              schema: {}
+      tags:
+        - Files
+  /api/setup/finish:
     post:
-      tags:
-        - Files
-      summary: Upload a file
-      description: Upload a file to Google Drive (Admin only)
-      operationId: uploadFile
-      security:
-        - sessionAuth: []
-      requestBody:
-        required: true
-        content:
-          multipart/form-data:
-            schema:
-              type: object
-              properties:
-                file:
-                  type: string
-                  format: binary
-                folderId:
-                  type: string
+      operationId: finishSetup
+      parameters: []
       responses:
-        "200":
-          description: Upload successful
-        "401":
-          description: Unauthorized
-        "403":
-          description: Admin access required
-
-  /api/files/rename:
-    patch:
-      tags:
-        - Files
-      summary: Rename a file
-      description: Rename a file or folder (Admin only)
-      operationId: renameFile
-      security:
-        - sessionAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - fileId
-                - newName
-              properties:
-                fileId:
-                  type: string
-                newName:
-                  type: string
-      responses:
-        "200":
-          description: Rename successful
-        "401":
-          description: Unauthorized
-
-  /api/files/delete:
-    delete:
-      tags:
-        - Files
-      summary: Delete a file
-      description: Move file to trash (Admin only)
-      operationId: deleteFile
-      security:
-        - sessionAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - fileId
-              properties:
-                fileId:
-                  type: string
-      responses:
-        "200":
-          description: Delete successful
-        "401":
-          description: Unauthorized
-
-  # ==============================================================================
-  # AUTH ENDPOINTS
-  # ==============================================================================
-  /api/auth/me:
-    get:
-      tags:
-        - Auth
-      summary: Get current user
-      description: Get the currently authenticated user's information
-      operationId: getCurrentUser
-      responses:
-        "200":
-          description: User information
+        '200':
+          description: The request has succeeded.
           content:
             application/json:
-              schema:
-                $ref: "#/components/schemas/User"
-        "401":
-          description: Not authenticated
-
-  /api/auth/folder:
+              schema: {}
+      tags:
+        - Setup
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {}
+  /api/setup/finish-service-account:
     post:
+      operationId: finishServiceAccountSetup
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema: {}
       tags:
-        - Auth
-      summary: Authenticate to protected folder
-      description: Submit credentials to access a protected folder
-      operationId: authenticateFolder
+        - Setup
       requestBody:
         required: true
         content:
           application/json:
-            schema:
-              type: object
-              required:
-                - folderId
-                - password
-              properties:
-                folderId:
-                  type: string
-                id:
-                  type: string
-                  description: Optional user ID
-                password:
-                  type: string
-      responses:
-        "200":
-          description: Access granted
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  token:
-                    type: string
-        "401":
-          description: Invalid credentials
-
-  # ==============================================================================
-  # SHARE ENDPOINTS
-  # ==============================================================================
+            schema: {}
   /api/share:
     post:
+      operationId: createShareLink
+      description: Create a shareable link for a file or folder (Admin only).
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateShareLinkResponse'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
       tags:
         - Share
-      summary: Create share link
-      description: Create a shareable link for a file or folder (Admin only)
-      operationId: createShareLink
-      security:
-        - sessionAuth: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              required:
-                - itemName
-                - type
-                - expiresIn
-              properties:
-                path:
-                  type: string
-                  description: Required for single-item shares
-                itemName:
-                  type: string
-                type:
-                  type: string
-                  enum: [timed, session]
-                expiresIn:
-                  type: string
-                  default: 7d
-                  description: Duration string such as 1h, 7d, or 30d
-                loginRequired:
-                  type: boolean
-                  default: false
-                items:
-                  type: array
-                  description: Include to create a shared collection
-                  items:
-                    $ref: "#/components/schemas/DriveFile"
-                maxUses:
-                  type: integer
-                  nullable: true
-                preventDownload:
-                  type: boolean
-                hasWatermark:
-                  type: boolean
-                watermarkText:
-                  type: string
-                  nullable: true
-      responses:
-        "200":
-          description: Share link created
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  shareableUrl:
-                    type: string
-                  token:
-                    type: string
-                  jti:
-                    type: string
-                  newShareLink:
-                    $ref: "#/components/schemas/ShareLink"
-        "401":
-          description: Unauthorized
-
-  /api/share/list:
-    get:
-      tags:
-        - Share
-      summary: List share links
-      description: Get all active share links (Admin only)
-      operationId: listShareLinks
-      security:
-        - sessionAuth: []
-      responses:
-        "200":
-          description: List of share links
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ShareLink"
-
+              $ref: '#/components/schemas/CreateShareLinkRequest'
   /api/share/delete:
     post:
-      tags:
-        - Share
-      summary: Delete share link
-      description: Delete a share link (Admin only)
       operationId: deleteShareLink
-      security:
-        - sessionAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/ShareLink"
+      description: Delete a share link (Admin only).
+      parameters: []
       responses:
-        "200":
-          description: Share link deleted
-        "401":
-          description: Unauthorized
-
-  /api/share/revoke:
-    post:
-      tags:
-        - Share
-      summary: Revoke a share token
-      description: Blocks an existing share token until its original expiry time
-      operationId: revokeShareLink
-      security:
-        - sessionAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - jti
-                - expiresAt
-              properties:
-                jti:
-                  type: string
-                expiresAt:
-                  type: string
-                  format: date-time
-      responses:
-        "200":
-          description: Share link revoked
-
-  /api/share/status:
-    post:
-      tags:
-        - Share
-      summary: Check share token status
-      description: Validates whether a share token is still usable
-      operationId: getShareStatus
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - shareToken
-              properties:
-                shareToken:
-                  type: string
-      responses:
-        "200":
-          description: Validation result
+        '200':
+          description: The request has succeeded.
+        '401':
+          description: Access is unauthorized.
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  valid:
-                    type: boolean
-                  error:
-                    type: string
-
-  /api/share/track:
-    post:
+                $ref: '#/components/schemas/Error'
       tags:
         - Share
-      summary: Track share access
-      description: Increments the view count for a share link
-      operationId: trackShareAccess
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              required:
-                - shareToken
-              properties:
-                shareToken:
-                  type: string
-      responses:
-        "204":
-          description: Access tracked
-
+              $ref: '#/components/schemas/ShareDeleteRequest'
   /api/share/items/{shareId}:
     get:
-      tags:
-        - Share
-      summary: Read shared collection items
-      description: Resolves the items stored for a collection share
       operationId: getSharedCollectionItems
+      description: Resolves the items stored for a collection share.
       parameters:
         - name: shareId
           in: path
@@ -571,171 +1900,326 @@ paths:
           required: true
           schema:
             type: string
+          explode: false
       responses:
-        "200":
-          description: Collection contents
+        '200':
+          description: The request has succeeded.
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  items:
-                    type: array
-                    items:
-                      $ref: "#/components/schemas/DriveFile"
-                  collectionName:
-                    type: string
-
-  # ==============================================================================
-  # ADMIN ENDPOINTS
-  # ==============================================================================
-  /api/admin/config:
+                $ref: '#/components/schemas/SharedCollectionResponse'
+      tags:
+        - Share
+  /api/share/list:
     get:
-      tags:
-        - Admin
-      summary: Get app configuration
-      description: Get current application configuration
-      operationId: getConfig
-      security:
-        - sessionAuth: []
+      operationId: listShareLinks
+      description: Get all active share links (Admin only).
+      parameters: []
       responses:
-        "200":
-          description: Configuration
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/AppConfig"
-    post:
-      tags:
-        - Admin
-      summary: Update app configuration
-      description: Update application configuration (Admin only)
-      operationId: updateConfig
-      security:
-        - sessionAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/AppConfig"
-      responses:
-        "200":
-          description: Configuration updated
-        "401":
-          description: Unauthorized
-
-  /api/admin/users:
-    get:
-      tags:
-        - Admin
-      summary: List admin users
-      description: Get list of admin email addresses
-      operationId: listAdmins
-      security:
-        - sessionAuth: []
-      responses:
-        "200":
-          description: List of admin emails
+        '200':
+          description: The request has succeeded.
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  type: string
-    post:
-      tags:
-        - Admin
-      summary: Add admin user
-      description: Add a new admin user
-      operationId: addAdmin
-      security:
-        - sessionAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - email
-              properties:
-                email:
-                  type: string
-                  format: email
-      responses:
-        "200":
-          description: Admin added
-        "401":
-          description: Unauthorized
-    delete:
-      tags:
-        - Admin
-      summary: Remove admin user
-      description: Remove an admin user
-      operationId: removeAdmin
-      security:
-        - sessionAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - email
-              properties:
-                email:
-                  type: string
-                  format: email
-      responses:
-        "200":
-          description: Admin removed
-        "401":
-          description: Unauthorized
-
-  /api/admin/activity-log:
-    get:
-      tags:
-        - Admin
-      summary: Get activity logs
-      description: Get system activity logs
-      operationId: getActivityLogs
-      security:
-        - sessionAuth: []
-      parameters:
-        - name: limit
-          in: query
-          schema:
-            type: integer
-            default: 100
-        - name: offset
-          in: query
-          schema:
-            type: integer
-            default: 0
-      responses:
-        "200":
-          description: Activity logs
+                  $ref: '#/components/schemas/ShareLink'
+        '401':
+          description: Access is unauthorized.
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ActivityLog"
-
-# ==============================================================================
-# COMPONENTS
-# ==============================================================================
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Share
+      security:
+        - ApiKeyAuth: []
+  /api/share/revoke:
+    post:
+      operationId: revokeShareLink
+      description: Blocks an existing share token until its original expiry time.
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Share
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShareRevokeRequest'
+  /api/share/status:
+    post:
+      operationId: getShareStatus
+      description: Validates whether a share token is still usable.
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShareStatusResponse'
+      tags:
+        - Share
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShareTokenRequest'
+  /api/share/track:
+    post:
+      operationId: trackShareAccess
+      description: Increments the view count for a share link.
+      parameters: []
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+      tags:
+        - Share
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShareTokenRequest'
+  /api/storage-details:
+    get:
+      operationId: getStorageDetails
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Telemetry
+      security:
+        - ApiKeyAuth: []
+  /api/trash:
+    get:
+      operationId: getTrash
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Files
+      security:
+        - ApiKeyAuth: []
 components:
-  securitySchemes:
-    sessionAuth:
-      type: apiKey
-      in: cookie
-      name: next-auth.session-token
-      description: NextAuth.js session cookie
-
   schemas:
+    AccessRequestCreateRequest:
+      type: object
+      required:
+        - folderId
+        - folderName
+      properties:
+        folderId:
+          type: string
+        folderName:
+          type: string
+    ActivityLog:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+        timestamp:
+          type: integer
+          format: int64
+        severity:
+          $ref: '#/components/schemas/ActivitySeverity'
+        userEmail:
+          type: string
+        itemName:
+          type: string
+        status:
+          type: string
+        ipAddress:
+          type: string
+    ActivitySeverity:
+      type: string
+      enum:
+        - info
+        - warning
+        - error
+        - critical
+    AdminLatencySummary:
+      type: object
+      properties:
+        totalCheckMs:
+          type: integer
+          format: int32
+        averageDependencyMs:
+          type: integer
+          format: int32
+        fastestDependency:
+          $ref: '#/components/schemas/DependencyLatency'
+        slowestDependency:
+          $ref: '#/components/schemas/DependencyLatency'
+        dependencies:
+          $ref: '#/components/schemas/DependencyLatencies'
+    AdminSystemHealthResponse:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/HealthStatus'
+        timestamp:
+          type: string
+          format: date-time
+        services:
+          $ref: '#/components/schemas/HealthServices'
+        errorRate:
+          $ref: '#/components/schemas/ErrorRateSummary'
+        latency:
+          $ref: '#/components/schemas/AdminLatencySummary'
+    AppConfig:
+      type: object
+      properties:
+        hideAuthor:
+          type: boolean
+        appName:
+          type: string
+        logoUrl:
+          type: string
+        faviconUrl:
+          type: string
+        primaryColor:
+          type: string
+    AuthenticateFolderRequest:
+      type: object
+      required:
+        - folderId
+        - password
+      properties:
+        folderId:
+          type: string
+        id:
+          type: string
+        password:
+          type: string
+    AuthenticateFolderResponse:
+      type: object
+      properties:
+        token:
+          type: string
+    CacheBackend:
+      type: string
+      enum:
+        - redis
+        - memory
+    CacheHealth:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/ServiceStatus'
+        latency:
+          type: integer
+          format: int32
+        checkedAt:
+          type: string
+          format: date-time
+        error:
+          type: string
+        backend:
+          $ref: '#/components/schemas/CacheBackend'
+    CreateShareLinkRequest:
+      type: object
+      required:
+        - itemName
+        - type
+        - expiresIn
+      properties:
+        path:
+          type: string
+        itemName:
+          type: string
+        type:
+          $ref: '#/components/schemas/ShareType'
+        expiresIn:
+          type: string
+        loginRequired:
+          type: boolean
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/DriveFile'
+        maxUses:
+          type: integer
+          format: int32
+          nullable: true
+        preventDownload:
+          type: boolean
+        hasWatermark:
+          type: boolean
+        watermarkText:
+          type: string
+          nullable: true
+    CreateShareLinkResponse:
+      type: object
+      properties:
+        shareableUrl:
+          type: string
+        token:
+          type: string
+        jti:
+          type: string
+        newShareLink:
+          $ref: '#/components/schemas/ShareLink'
+    DeleteFileRequest:
+      type: object
+      required:
+        - fileId
+      properties:
+        fileId:
+          type: string
+    DependencyLatencies:
+      type: object
+      properties:
+        database:
+          type: integer
+          format: int32
+        cache:
+          type: integer
+          format: int32
+        google_drive:
+          type: integer
+          format: int32
+    DependencyLatency:
+      type: object
+      properties:
+        name:
+          type: string
+        latency:
+          type: integer
+          format: int32
     DriveFile:
       type: object
       properties:
@@ -767,40 +2251,235 @@ components:
             type: string
         trashed:
           type: boolean
-
+    EmailRequest:
+      type: object
+      required:
+        - email
+      properties:
+        email:
+          type: string
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+        details:
+          anyOf:
+            - type: string
+            - type: array
+              items: {}
+      description: Mirrors the legacy OpenAPI error shape used across the app.
+    ErrorRateSummary:
+      type: object
+      properties:
+        last24h:
+          type: integer
+          format: int32
+        previous24h:
+          type: integer
+          format: int32
+        trendPercentage:
+          type: number
+          format: double
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+    ErrorWithDetails:
+      type: object
+      required:
+        - error
+        - details
+      properties:
+        error:
+          type: string
+        details:
+          type: array
+          items: {}
     FileListResponse:
       type: object
       properties:
         files:
           type: array
           items:
-            $ref: "#/components/schemas/DriveFile"
+            $ref: '#/components/schemas/DriveFile'
         nextPageToken:
           type: string
-          nullable: true
-        folderPath:
-          type: array
-          items:
-            type: object
-            properties:
-              id:
-                type: string
-              name:
-                type: string
-
-    User:
+    FileRequestCreateRequest:
       type: object
+      required:
+        - folderId
+        - folderName
+        - title
+        - expiresIn
+      properties:
+        folderId:
+          type: string
+        folderName:
+          type: string
+        title:
+          type: string
+        expiresIn:
+          type: integer
+          format: int32
+    FileRequestDeleteRequest:
+      type: object
+      required:
+        - token
+      properties:
+        token:
+          type: string
+    FileRequestUploadInitRequest:
+      type: object
+      required:
+        - name
+        - mimeType
+        - size
       properties:
         name:
           type: string
-        email:
+        mimeType:
           type: string
-        image:
+        size:
+          type: number
+          format: double
+    ForbiddenResponse:
+      type: object
+    GoogleDriveHealth:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/ServiceStatus'
+        latency:
+          type: integer
+          format: int32
+        checkedAt:
           type: string
-        role:
+          format: date-time
+        error:
           type: string
-          enum: [USER, ADMIN, EDITOR, GUEST]
-
+        quota:
+          type: object
+          allOf:
+            - $ref: '#/components/schemas/GoogleDriveQuota'
+          nullable: true
+    GoogleDriveQuota:
+      type: object
+      properties:
+        usage:
+          type: integer
+          format: int32
+        limit:
+          type: integer
+          format: int32
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/HealthStatus'
+        timestamp:
+          type: string
+          format: date-time
+        uptime:
+          type: number
+          format: double
+        environment:
+          type: string
+        services:
+          $ref: '#/components/schemas/HealthServices'
+    HealthServices:
+      type: object
+      properties:
+        database:
+          $ref: '#/components/schemas/ServiceHealth'
+        cache:
+          $ref: '#/components/schemas/CacheHealth'
+        google_drive:
+          $ref: '#/components/schemas/GoogleDriveHealth'
+    HealthStatus:
+      type: string
+      enum:
+        - ok
+        - error
+    NotFoundResponse:
+      type: object
+    RenameFileRequest:
+      type: object
+      required:
+        - fileId
+        - newName
+      properties:
+        fileId:
+          type: string
+        newName:
+          type: string
+    ResumableUploadInitBody:
+      type: object
+      required:
+        - name
+        - mimeType
+        - parentId
+        - size
+      properties:
+        name:
+          type: string
+        mimeType:
+          type: string
+        parentId:
+          type: string
+        size:
+          type: number
+          format: double
+    SearchType:
+      type: string
+      enum:
+        - image
+        - video
+        - audio
+        - document
+        - all
+    ServiceHealth:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/ServiceStatus'
+        latency:
+          type: integer
+          format: int32
+        checkedAt:
+          type: string
+          format: date-time
+        error:
+          type: string
+    ServiceStatus:
+      type: string
+      enum:
+        - healthy
+        - unhealthy
+        - not_configured
+    ServiceUnavailableErrorResponse:
+      type: object
+      required:
+        - body
+      properties:
+        body:
+          $ref: '#/components/schemas/Error'
+    ShareDeleteRequest:
+      type: object
+      required:
+        - id
+        - jti
+        - expiresAt
+      properties:
+        id:
+          type: string
+        jti:
+          type: string
+        expiresAt:
+          type: string
     ShareLink:
       type: object
       properties:
@@ -821,173 +2500,81 @@ components:
           type: string
         viewCount:
           type: integer
+          format: int32
         isCollection:
           type: boolean
-
-    AppConfig:
+    ShareRevokeRequest:
+      type: object
+      required:
+        - jti
+        - expiresAt
+      properties:
+        jti:
+          type: string
+        expiresAt:
+          type: string
+    ShareStatusResponse:
       type: object
       properties:
-        hideAuthor:
+        valid:
           type: boolean
-        appName:
-          type: string
-        logoUrl:
-          type: string
-        faviconUrl:
-          type: string
-        primaryColor:
-          type: string
-
-    ActivityLog:
-      type: object
-      properties:
-        id:
-          type: string
-        type:
-          type: string
-        timestamp:
-          type: integer
-        severity:
-          type: string
-          enum: [info, warning, error, critical]
-        userEmail:
-          type: string
-        itemName:
-          type: string
-        status:
-          type: string
-        ipAddress:
-          type: string
-
-    HealthResponse:
-      type: object
-      properties:
-        status:
-          type: string
-          enum: [ok, error]
-        timestamp:
-          type: string
-          format: date-time
-        uptime:
-          type: number
-        environment:
-          type: string
-        services:
-          type: object
-          properties:
-            database:
-              $ref: "#/components/schemas/ServiceHealth"
-            cache:
-              allOf:
-                - $ref: "#/components/schemas/ServiceHealth"
-                - type: object
-                  properties:
-                    backend:
-                      type: string
-                      enum: [redis, memory]
-            google_drive:
-              $ref: "#/components/schemas/GoogleDriveHealth"
-
-    ServiceHealth:
-      type: object
-      properties:
-        status:
-          type: string
-          enum: [healthy, unhealthy, not_configured]
-        latency:
-          type: integer
-        checkedAt:
-          type: string
-          format: date-time
         error:
           type: string
-
-    GoogleDriveHealth:
-      allOf:
-        - $ref: "#/components/schemas/ServiceHealth"
-        - type: object
-          properties:
-            quota:
-              type: object
-              nullable: true
-              properties:
-                usage:
-                  type: integer
-                limit:
-                  type: integer
-
-    AdminSystemHealthResponse:
+    ShareTokenRequest:
+      type: object
+      required:
+        - shareToken
+      properties:
+        shareToken:
+          type: string
+    ShareType:
+      type: string
+      enum:
+        - timed
+        - session
+    SharedCollectionResponse:
       type: object
       properties:
-        status:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/DriveFile'
+        collectionName:
           type: string
-          enum: [ok, error]
-        timestamp:
-          type: string
-          format: date-time
-        services:
-          type: object
-          properties:
-            database:
-              $ref: "#/components/schemas/ServiceHealth"
-            cache:
-              allOf:
-                - $ref: "#/components/schemas/ServiceHealth"
-                - type: object
-                  properties:
-                    backend:
-                      type: string
-                      enum: [redis, memory]
-            google_drive:
-              $ref: "#/components/schemas/GoogleDriveHealth"
-        errorRate:
-          type: object
-          properties:
-            last24h:
-              type: integer
-            previous24h:
-              type: integer
-            trendPercentage:
-              type: number
-        latency:
-          type: object
-          properties:
-            totalCheckMs:
-              type: integer
-            averageDependencyMs:
-              type: integer
-            fastestDependency:
-              type: object
-              properties:
-                name:
-                  type: string
-                latency:
-                  type: integer
-            slowestDependency:
-              type: object
-              properties:
-                name:
-                  type: string
-                latency:
-                  type: integer
-            dependencies:
-              type: object
-              properties:
-                database:
-                  type: integer
-                cache:
-                  type: integer
-                google_drive:
-                  type: integer
-
-    Error:
+    UnauthorizedResponse:
+      type: object
+    UploadMode:
+      type: string
+      enum:
+        - init
+        - chunk
+    User:
       type: object
       properties:
-        error:
+        name:
           type: string
-        details:
-          oneOf:
-            - type: string
-            - type: array
-              items:
-                type: object
+        email:
+          type: string
+        image:
+          type: string
+        role:
+          $ref: '#/components/schemas/UserRole'
+    UserRole:
+      type: string
+      enum:
+        - USER
+        - ADMIN
+        - EDITOR
+        - GUEST
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: cookie
+      name: next-auth.session-token
+servers:
+  - url: https://zee-index.duckdns.org
+    description: Production server
+    variables: {}
+  - url: http://localhost:3000
+    description: Development server
+    variables: {}

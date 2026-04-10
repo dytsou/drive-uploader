@@ -211,6 +211,18 @@ flowchart TB
 | [Node.js](https://nodejs.org/) + pnpm                          | 20.x+ / 9.x+ | 🔶 Only for local dev |
 | Google Cloud Project                                           | —            | ✅ Yes                |
 
+---
+
+## 🔐 Roles & Permissions (ADMIN / EDITOR / USER)
+
+Zee-Index resolves roles server-side and **manages ADMIN/EDITOR via the Admin API** (Redis-backed lists).
+
+- **ADMIN**: manage via `POST/DELETE /api/admin/users`
+- **EDITOR**: manage via `POST/DELETE /api/admin/editors`
+- **USER**: default role when not in the above lists
+
+**Bootstrap**: on the very first start (when the admin list is empty), Zee-Index seeds initial admins from `ADMIN_EMAILS` once so you can access the admin UI, then ongoing changes should be done via the Admin API.
+
 ### 🐳 Quick Start with Docker (Recommended)
 
 The fastest way to get Zee-Index running with **PostgreSQL**, **Redis**, **auto-HTTPS**, all preconfigured:

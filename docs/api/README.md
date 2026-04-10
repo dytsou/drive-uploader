@@ -4,8 +4,12 @@
 
 This folder contains the maintained API reference for Zee-Index.
 
-- `openapi.yaml` documents the core public, share, auth, admin, and health endpoints that are actively maintained.
-- The complete route inventory lives under [`app/api`](/C:/Users/Ifauze/Project/zee-index/app/api).
+- `spec/entry.tsp` is the **source of truth** (TypeSpec entrypoint).
+- TypeSpec is organized into:
+  - `spec/models/**` (shared schemas used across the API)
+  - `spec/modules/**` (feature modules; each module has `models.tsp` + `operations.tsp`)
+- `openapi.yaml` is **generated** from TypeSpec.
+- The complete route inventory lives under `app/api/**` (not all routes are guaranteed documented yet).
 
 ## How to View the OpenAPI Spec
 
@@ -19,12 +23,18 @@ This folder contains the maintained API reference for Zee-Index.
 2. Redoc
 
    ```bash
-   npx @redocly/cli preview-docs ./docs/api/openapi.yaml
+   pnpm api:docs:redoc
    ```
 
 3. Postman
 
-   Import `docs/api/openapi.yaml`.
+   Run `pnpm api:compile` and import `docs/api/openapi.yaml`.
+
+## How to Generate OpenAPI
+
+```bash
+pnpm compile:openapi
+```
 
 ## Route Inventory
 

@@ -1,0 +1,11 @@
+import "./health/index.tsp";
+import "./admin/index.tsp";
+import "./files/index.tsp";
+import "./auth/index.tsp";
+import "./share/index.tsp";
+import "./file-requests/index.tsp";
+import "./setup/index.tsp";
+import "./config/index.tsp";
+import "./public/index.tsp";
+import "./telemetry/index.tsp";
+import "./cron/index.tsp";
