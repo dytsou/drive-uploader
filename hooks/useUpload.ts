@@ -136,6 +136,41 @@ export function useUpload({
         if (!initRes.ok) throw new Error(t("initFailed"));
         const { uploadUrl } = await initRes.json();
 
+        if (file.size === 0) {
+          const isLocalUpload = uploadUrl.startsWith("local-storage-upload://");
+          const zeroHeaders: Record<string, string> = {
+            "Content-Type": "application/octet-stream",
+          };
+          if (isLocalUpload) {
+            zeroHeaders["Content-Range"] = "bytes 0-0/0";
+          } else {
+            zeroHeaders["Content-Length"] = "0";
+          }
+
+          const chunkRes = await retryFetch(
+            `/api/files/upload?type=chunk&uploadUrl=${encodeURIComponent(
+              uploadUrl,
+            )}&parentId=${targetParentId}`,
+            {
+              method: "POST",
+              headers: zeroHeaders,
+              body: new Uint8Array(0),
+            },
+          );
+
+          if (!chunkRes.ok) throw new Error(t("chunkFailed"));
+          const chunkData = await chunkRes.json();
+          if (chunkData.status !== "completed") {
+            throw new Error(t("chunkFailed"));
+          }
+          updateUploadProgress(file.name, 100, "success");
+          triggerRefresh();
+          setTimeout(() => {
+            removeUpload(file.name);
+          }, 5000);
+          return;
+        }
+
         let start = 0;
         while (start < file.size) {
           const end = Math.min(start + CHUNK_SIZE, file.size);

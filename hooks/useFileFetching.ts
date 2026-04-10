@@ -163,6 +163,8 @@ export function useFileFetching({
         queryKey: ["folderPath", currentFolderId],
       });
       queryClient.invalidateQueries({ queryKey: ["files", currentFolderId] });
+      queryClient.invalidateQueries({ queryKey: ["folder-contents"] });
+      queryClient.invalidateQueries({ queryKey: ["storageDetails"] });
     }
   }, [refreshKey, currentFolderId, queryClient]);
 

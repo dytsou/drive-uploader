@@ -58,6 +58,7 @@ export function useSidebarController() {
   const isSidebarOpen = useAppStore((state) => state.isSidebarOpen);
   const setSidebarOpen = useAppStore((state) => state.setSidebarOpen);
   const currentFolderId = useAppStore((state) => state.currentFolderId);
+  const refreshKey = useAppStore((state) => state.refreshKey);
   const user = useAppStore((state) => state.user);
   const shareToken = useAppStore((state) => state.shareToken);
   const setNavigatingId = useAppStore((state) => state.setNavigatingId);
@@ -259,6 +260,74 @@ export function useSidebarController() {
     },
     [fetchSubfolders],
   );
+
+  useEffect(() => {
+    if (refreshKey === 0 || !mounted || !isAuthHealthy) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const resyncLoadedFolderNodes = async () => {
+      const ids = new Set<string>();
+      const snapshot = treeRef.current;
+      if (currentFolderId && snapshot[currentFolderId]?.hasLoaded) {
+        ids.add(currentFolderId);
+      }
+      if (snapshot[rootFolderId]?.hasLoaded) {
+        ids.add(rootFolderId);
+      }
+
+      const results = await Promise.all(
+        [...ids].map(async (id) => ({
+          id,
+          children: await fetchSubfolders(id),
+        })),
+      );
+
+      if (cancelled) return;
+
+      setTree((prev) => {
+        const next = { ...prev };
+        for (const { id, children } of results) {
+          if (!next[id]) continue;
+          next[id] = {
+            ...next[id],
+            childIds: children.map((c) => c.id),
+            hasLoaded: true,
+            isLoading: false,
+          };
+          children.forEach((child) => {
+            if (!next[child.id]) {
+              next[child.id] = child;
+            } else {
+              next[child.id] = {
+                ...next[child.id],
+                name: child.name,
+                isProtected: child.isProtected,
+                isFolder: child.isFolder,
+                parentId: child.parentId,
+              };
+            }
+          });
+        }
+        return next;
+      });
+    };
+
+    void resyncLoadedFolderNodes();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    refreshKey,
+    mounted,
+    isAuthHealthy,
+    currentFolderId,
+    rootFolderId,
+    fetchSubfolders,
+  ]);
 
   useEffect(() => {
     if (!mounted || !isAuthHealthy) {

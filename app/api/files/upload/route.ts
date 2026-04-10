@@ -130,25 +130,38 @@ export const POST = createEditorRoute(
         const contentRange = request.headers.get("Content-Range");
         const contentLength = request.headers.get("Content-Length");
 
-        if (
-          !uploadUrl.startsWith("https://www.googleapis.com/") ||
-          !contentRange
-        ) {
+        const chunkBuffer = await request.arrayBuffer();
+        const isGoogleUpload = uploadUrl.startsWith(
+          "https://www.googleapis.com/",
+        );
+        const isEmptyGoogleUpload =
+          isGoogleUpload && chunkBuffer.byteLength === 0;
+
+        if (!isGoogleUpload) {
           return NextResponse.json(
             { error: "Parameter uploadUrl tidak valid atau header kurang." },
             { status: 400 },
           );
         }
 
-        const chunkBuffer = await request.arrayBuffer();
+        if (!isEmptyGoogleUpload && !contentRange) {
+          return NextResponse.json(
+            { error: "Parameter uploadUrl tidak valid atau header kurang." },
+            { status: 400 },
+          );
+        }
+
+        const driveHeaders: Record<string, string> = {
+          "Content-Length": contentLength ?? chunkBuffer.byteLength.toString(),
+        };
+        if (contentRange) {
+          driveHeaders["Content-Range"] = contentRange;
+        }
+
         const driveResponse = await fetch(uploadUrl, {
           method: "PUT",
-          headers: {
-            "Content-Length":
-              contentLength || chunkBuffer.byteLength.toString(),
-            "Content-Range": contentRange,
-          },
-          body: chunkBuffer,
+          headers: driveHeaders,
+          body: chunkBuffer.byteLength === 0 ? new Uint8Array(0) : chunkBuffer,
         });
 
         if (driveResponse.status === 308) {

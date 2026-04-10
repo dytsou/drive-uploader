@@ -96,6 +96,11 @@ export function useNotifications({
                 )
               ) {
                 queryClient.invalidateQueries({ queryKey: ["files"] });
+                queryClient.invalidateQueries({
+                  queryKey: ["folder-contents"],
+                });
+                queryClient.invalidateQueries({ queryKey: ["storageDetails"] });
+                useAppStore.getState().triggerRefresh();
               }
 
               if (
