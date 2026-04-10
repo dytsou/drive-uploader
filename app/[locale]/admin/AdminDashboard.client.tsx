@@ -27,14 +27,14 @@ import { cn } from "@/lib/utils";
 import type { AdminStats } from "@/lib/adminStats";
 import { getAdminStatsAction } from "@/app/actions/admin";
 import { useTranslations } from "next-intl";
-import type { AdminDashboardProps } from "@/app/[locale]/admin/admin-dashboard.types";
-import { AdminTabs } from "@/app/[locale]/admin/AdminTabs.client";
-import { AdminSummaryTab } from "@/app/[locale]/admin/AdminSummaryTab.client";
-import { AdminAnalyticsTab } from "@/app/[locale]/admin/AdminAnalyticsTab.client";
-import { AdminUsersTab } from "@/app/[locale]/admin/AdminUsersTab.client";
-import { AdminSecurityTab } from "@/app/[locale]/admin/AdminSecurityTab.client";
-import { AdminBrandingTab } from "@/app/[locale]/admin/AdminBrandingTab.client";
-import { AdminLogsTab } from "@/app/[locale]/admin/AdminLogsTab.client";
+import type { AdminDashboardProps } from "@/app/[locale]/admin/_client/admin-dashboard.types";
+import { AdminTabs } from "@/app/[locale]/admin/_client/AdminTabs.client";
+import { AdminSummaryTab } from "@/app/[locale]/admin/_client/AdminSummaryTab.client";
+import { AdminAnalyticsTab } from "@/app/[locale]/admin/_client/AdminAnalyticsTab.client";
+import { AdminUsersTab } from "@/app/[locale]/admin/_client/AdminUsersTab.client";
+import { AdminSecurityTab } from "@/app/[locale]/admin/_client/AdminSecurityTab.client";
+import { AdminBrandingTab } from "@/app/[locale]/admin/_client/AdminBrandingTab.client";
+import { AdminLogsTab } from "@/app/[locale]/admin/_client/AdminLogsTab.client";
 
 export function AdminDashboard(props: AdminDashboardProps) {
   const {
