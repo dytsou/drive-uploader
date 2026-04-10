@@ -28,11 +28,15 @@ interface ProtectedFolder {
   password: string;
 }
 
-export default function ProtectedFoldersManager() {
+export default function ProtectedFoldersManager(props: {
+  initialFolders?: Record<string, ProtectedFolder>;
+}) {
   const { addToast } = useAppStore();
   const t = useTranslations("ProtectedFoldersManager");
-  const [folders, setFolders] = useState<Record<string, ProtectedFolder>>({});
-  const [isLoading, setIsLoading] = useState(true);
+  const [folders, setFolders] = useState<Record<string, ProtectedFolder>>(
+    props.initialFolders || {},
+  );
+  const [isLoading, setIsLoading] = useState(!props.initialFolders);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [folderToDelete, setFolderToDelete] = useState<string | null>(null);
   const [newFolder, setNewFolder] = useState({ folderId: "", password: "" });
@@ -49,8 +53,13 @@ export default function ProtectedFoldersManager() {
   }, [addToast]);
 
   useEffect(() => {
+    if (props.initialFolders) {
+      setIsLoading(false);
+      return;
+    }
+
     fetchFolders();
-  }, [fetchFolders]);
+  }, [fetchFolders, props.initialFolders]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;

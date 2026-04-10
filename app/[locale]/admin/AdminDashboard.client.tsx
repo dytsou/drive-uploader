@@ -192,7 +192,14 @@ export function AdminDashboard(props: AdminDashboardProps) {
         />
         <AdminAnalyticsTab />
         <AdminUsersTab sessionEmail={props.sessionEmail} />
-        <AdminSecurityTab>
+        <AdminSecurityTab
+          initialProtectedFolders={props.initialData?.protectedFolders}
+          initialUserAccessPermissions={
+            props.initialData?.userAccessPermissions
+          }
+          initialAccessRequests={props.initialData?.accessRequests}
+          initialManualDrives={props.initialData?.manualDrives}
+        >
           {shareLinks.length === 0 && fileRequests.length === 0 ? (
             <div className="text-center py-12 bg-card border rounded-xl border-dashed">
               <LinkIcon className="h-12 w-12 mx-auto mb-3 text-muted-foreground/50" />

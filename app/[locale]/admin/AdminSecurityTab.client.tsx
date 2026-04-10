@@ -7,10 +7,17 @@ import TwoFactorAuthSetup from "@/components/features/TwoFactorAuthSetup";
 import ProtectedFoldersManager from "@/components/admin/ProtectedFoldersManager";
 import UserFolderAccessManager from "@/components/admin/UserFolderAccessManager";
 import ManualDrivesManager from "@/components/admin/ManualDrivesManager";
+import type { AccessRequestRecord } from "@/lib/link-payloads";
 import { FolderLock, HardDrive, Network, ShieldCheck } from "lucide-react";
 import { useTranslations } from "next-intl";
 
-export function AdminSecurityTab(props: { children?: React.ReactNode }) {
+export function AdminSecurityTab(props: {
+  children?: React.ReactNode;
+  initialProtectedFolders?: Record<string, { id: string; password: string }>;
+  initialUserAccessPermissions?: Record<string, string[]>;
+  initialAccessRequests?: AccessRequestRecord[];
+  initialManualDrives?: { id: string; name: string; isProtected?: boolean }[];
+}) {
   const t = useTranslations("AdminPage");
 
   return (
@@ -39,10 +46,15 @@ export function AdminSecurityTab(props: { children?: React.ReactNode }) {
 
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
           <div>
-            <ProtectedFoldersManager />
+            <ProtectedFoldersManager
+              initialFolders={props.initialProtectedFolders}
+            />
           </div>
           <div>
-            <UserFolderAccessManager />
+            <UserFolderAccessManager
+              initialPermissions={props.initialUserAccessPermissions}
+              initialRequests={props.initialAccessRequests}
+            />
           </div>
         </div>
       </section>
@@ -52,7 +64,12 @@ export function AdminSecurityTab(props: { children?: React.ReactNode }) {
           <HardDrive className="text-blue-500" />
           <h3 className="text-lg font-bold">{t("sharedDrives")}</h3>
         </div>
-        <ManualDrivesManager />
+        <ManualDrivesManager
+          initialDbDrives={props.initialManualDrives?.map((d) => ({
+            ...d,
+            source: "db" as const,
+          }))}
+        />
       </section>
 
       <section className="space-y-6">

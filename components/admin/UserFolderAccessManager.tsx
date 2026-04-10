@@ -38,19 +38,28 @@ interface FolderAccess {
 
 interface AccessRequest {
   folderId: string;
-  folderName: string;
+  folderName?: string;
   email: string;
-  name: string;
+  name?: string | null;
   timestamp: number;
 }
 
-export default function UserFolderAccessManager() {
+export default function UserFolderAccessManager(props: {
+  initialPermissions?: Record<string, string[]>;
+  initialRequests?: AccessRequest[];
+}) {
   const { addToast } = useAppStore();
   const t = useTranslations("UserFolderAccessManager");
   const { confirm } = useConfirm();
-  const [permissions, setPermissions] = useState<Record<string, string[]>>({});
-  const [requests, setRequests] = useState<AccessRequest[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [permissions, setPermissions] = useState<Record<string, string[]>>(
+    props.initialPermissions || {},
+  );
+  const [requests, setRequests] = useState<AccessRequest[]>(
+    props.initialRequests || [],
+  );
+  const [isLoading, setIsLoading] = useState(
+    !props.initialPermissions && !props.initialRequests,
+  );
   const [isProcessing, setIsProcessing] = useState<string | null>(null);
   const [newAccess, setNewAccess] = useState<FolderAccess>({
     folderId: "",
@@ -77,8 +86,13 @@ export default function UserFolderAccessManager() {
   }, [addToast, t]);
 
   useEffect(() => {
+    if (props.initialPermissions || props.initialRequests) {
+      setIsLoading(false);
+      return;
+    }
+
     fetchData();
-  }, [fetchData]);
+  }, [fetchData, props.initialPermissions, props.initialRequests]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;

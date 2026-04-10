@@ -46,12 +46,16 @@ interface ManualDriveResponse {
   error?: string;
 }
 
-export default function ManualDrivesManager() {
+export default function ManualDrivesManager(props: {
+  initialDbDrives?: ManualDrive[];
+}) {
   const { addToast } = useAppStore();
   const t = useTranslations("ManualDrivesManager");
   const { confirm } = useConfirm();
-  const [dbDrives, setDbDrives] = useState<ManualDrive[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [dbDrives, setDbDrives] = useState<ManualDrive[]>(
+    props.initialDbDrives || [],
+  );
+  const [isLoading, setIsLoading] = useState(!props.initialDbDrives);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
   const [scannedDrives, setScannedDrives] = useState<ScannedDrive[]>([]);
@@ -100,8 +104,13 @@ export default function ManualDrivesManager() {
   }, []);
 
   useEffect(() => {
+    if (props.initialDbDrives) {
+      setIsLoading(false);
+      return;
+    }
+
     fetchDrives();
-  }, [fetchDrives]);
+  }, [fetchDrives, props.initialDbDrives]);
 
   const allDrives = useMemo(() => {
     const dbIds = new Set(dbDrives.map((d) => d.id));
