@@ -3,6 +3,10 @@ import type { AppConfig } from "@/lib/app-config.shared";
 import { getErrorMessage } from "@/lib/errors";
 import { DEFAULT_APP_CONFIG } from "@/lib/app-config.shared";
 import {
+  getAdminConfigAction,
+  updateAdminConfigAction,
+} from "@/app/actions/admin";
+import {
   AppState,
   ViewMode,
   DensityMode,
@@ -89,12 +93,12 @@ export const createUISlice: StateCreator<AppState, [], [], UISlice> = (
   localStorageAuthEnabled: null,
   localStoragePassword: null,
   fetchConfig: async () => {
+    return get().fetchPublicConfig();
+  },
+  fetchAdminConfig: async () => {
     set({ isConfigLoading: true });
     try {
-      const response = await fetch("/api/admin/config");
-      if (!response.ok)
-        throw new Error(`Failed to fetch admin config: ${response.status}`);
-      const config: AppConfig = await response.json();
+      const config: AppConfig = await getAdminConfigAction();
       set({
         hideAuthor: config.hideAuthor,
         appName: config.appName,
@@ -130,17 +134,7 @@ export const createUISlice: StateCreator<AppState, [], [], UISlice> = (
   setConfig: async (config: Partial<AppConfig>) => {
     set({ isConfigLoading: true });
     try {
-      const response = await fetch("/api/admin/config", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(config),
-      });
-      if (!response.ok) {
-        const result = await response.json().catch(() => ({}));
-        throw new Error(result.error || `Update failed: ${response.status}`);
-      }
-      const result = await response.json();
-      const updatedConfig = result.config as AppConfig;
+      const updatedConfig = await updateAdminConfigAction(config);
 
       set({
         hideAuthor: updatedConfig.hideAuthor,

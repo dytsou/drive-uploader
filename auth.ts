@@ -49,11 +49,14 @@ async function resolveRole(
     where: { email: normalizedEmail },
   });
 
-  let [adminCount, isRedisAdmin, isRedisEditor] = await Promise.all([
+  const [adminCountRaw, isRedisAdminRaw, isRedisEditor] = await Promise.all([
     kv.scard(REDIS_KEYS.ADMIN_USERS),
     kv.sismember(REDIS_KEYS.ADMIN_USERS, normalizedEmail),
     kv.sismember(REDIS_KEYS.ADMIN_EDITORS, normalizedEmail),
   ]);
+
+  let adminCount = adminCountRaw;
+  let isRedisAdmin = isRedisAdminRaw;
 
   // Bootstrap: if no admins exist yet, seed from ADMIN_EMAILS once.
   // After seeding, roles are managed via the admin API (Redis sets).

@@ -11,6 +11,12 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { useAppStore } from "@/lib/store";
+import {
+  evaluateIncidentsAction,
+  getSecurityLogsAction,
+  listIncidentsAction,
+  updateIncidentStatusAction,
+} from "@/app/actions/admin";
 
 type IncidentStatus = "open" | "acknowledged" | "resolved";
 type IncidentSeverity = "warning" | "error" | "critical";
@@ -30,7 +36,7 @@ interface Incident {
 interface SecurityEvent {
   id: string;
   type: string;
-  userEmail?: string;
+  userEmail?: string | null;
   ipAddress?: string;
   timestamp: number;
 }
@@ -69,25 +75,23 @@ export default function SecurityCenter() {
   const fetchSecurityData = useCallback(async () => {
     setLoading(true);
     try {
-      const [eventsRes, incidentsRes] = await Promise.all([
-        fetch("/api/admin/logs/security"),
-        fetch("/api/admin/incidents?limit=20&status=all"),
+      const [eventsPayload, incidentsPayload] = await Promise.all([
+        getSecurityLogsAction(),
+        listIncidentsAction({ limit: 20, status: "all" }),
       ]);
 
-      if (eventsRes.ok) {
-        const eventsPayload = await eventsRes.json();
-        setSecurityEvents(
-          Array.isArray(eventsPayload)
-            ? eventsPayload
-            : eventsPayload.logs || [],
-        );
-      }
-
-      if (incidentsRes.ok) {
-        const incidentsPayload = await incidentsRes.json();
-        setIncidents(incidentsPayload.incidents || []);
-        setOpenCount(incidentsPayload.openCount || 0);
-      }
+      setSecurityEvents(
+        Array.isArray(eventsPayload)
+          ? eventsPayload.map((e) => ({
+              id: `${e.timestamp}-${e.type}-${e.userEmail ?? "unknown"}`,
+              type: e.type,
+              userEmail: e.userEmail ?? null,
+              timestamp: e.timestamp,
+            }))
+          : [],
+      );
+      setIncidents(incidentsPayload.incidents || []);
+      setOpenCount(incidentsPayload.openCount || 0);
     } catch (err) {
       console.error("Failed to fetch security data", err);
       addToast({
@@ -102,13 +106,7 @@ export default function SecurityCenter() {
   const runEvaluation = async () => {
     setIsEvaluating(true);
     try {
-      const response = await fetch("/api/admin/incidents/evaluate", {
-        method: "POST",
-      });
-      const payload = await response.json();
-      if (!response.ok) {
-        throw new Error(payload.error || "Failed to run incident evaluation.");
-      }
+      const payload = await evaluateIncidentsAction();
 
       addToast({
         message: `Evaluation done: ${payload.summary.createdIncidents} created, ${payload.summary.updatedIncidents} updated.`,
@@ -128,21 +126,10 @@ export default function SecurityCenter() {
     }
   };
 
-  const updateIncidentStatus = async (id: string, status: IncidentStatus) => {
+  const setIncidentStatus = async (id: string, status: IncidentStatus) => {
     setUpdatingIncidentId(id);
     try {
-      const response = await fetch("/api/admin/incidents", {
-        method: "PATCH",
-        headers: {
-          "content-type": "application/json",
-        },
-        body: JSON.stringify({ id, status }),
-      });
-      const payload = await response.json();
-
-      if (!response.ok) {
-        throw new Error(payload.error || "Failed to update incident status.");
-      }
+      const payload = await updateIncidentStatusAction({ id, status });
 
       setIncidents((prev) =>
         prev.map((incident) =>
@@ -252,7 +239,7 @@ export default function SecurityCenter() {
                     <button
                       disabled={!canAck || updatingIncidentId === incident.id}
                       onClick={() =>
-                        updateIncidentStatus(incident.id, "acknowledged")
+                        setIncidentStatus(incident.id, "acknowledged")
                       }
                       className="px-2.5 py-1.5 text-xs rounded-md border hover:bg-accent disabled:opacity-50"
                     >
@@ -262,9 +249,7 @@ export default function SecurityCenter() {
                       disabled={
                         !canResolve || updatingIncidentId === incident.id
                       }
-                      onClick={() =>
-                        updateIncidentStatus(incident.id, "resolved")
-                      }
+                      onClick={() => setIncidentStatus(incident.id, "resolved")}
                       className="px-2.5 py-1.5 text-xs rounded-md bg-green-600 text-white hover:bg-green-700 disabled:opacity-50"
                     >
                       Resolve

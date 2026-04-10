@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { format } from "date-fns";
 import { Shield, Clock, User, Globe, FileText, Trash2 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
+import { clearAuditLogsAction, getAuditLogsAction } from "@/app/actions/admin";
 
 export default function AuditDashboard() {
   const [logs, setLogs] = useState<any[]>([]);
@@ -13,10 +14,7 @@ export default function AuditDashboard() {
   const fetchLogs = async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/admin/audit");
-      if (res.ok) {
-        setLogs(await res.json());
-      }
+      setLogs(await getAuditLogsAction());
     } catch (error) {
       console.error(error);
     } finally {
@@ -27,11 +25,9 @@ export default function AuditDashboard() {
   const clearLogs = async () => {
     if (!confirm("Are you sure you want to clear all audit logs?")) return;
     try {
-      const res = await fetch("/api/admin/audit", { method: "DELETE" });
-      if (res.ok) {
-        setLogs([]);
-        addToast({ message: "Audit logs cleared", type: "success" });
-      }
+      await clearAuditLogsAction();
+      setLogs([]);
+      addToast({ message: "Audit logs cleared", type: "success" });
     } catch {
       addToast({ message: "Failed to clear logs", type: "error" });
     }

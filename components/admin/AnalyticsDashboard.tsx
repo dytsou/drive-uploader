@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import type { AnalyticsData } from "@/lib/analyticsTracker";
 import { useTranslations } from "next-intl";
+import { getAdminAnalyticsAction } from "@/app/actions/admin";
 
 const PageViewsChart = dynamic(
   () => import("@/components/charts/PageViewsChart"),
@@ -121,10 +122,8 @@ export default function AnalyticsDashboard() {
       else setIsLoading(true);
 
       try {
-        const response = await fetch("/api/admin/analytics");
-        if (!response.ok) throw new Error(t("fetchError"));
-        const result = await response.json();
-        setData(result);
+        const result = await getAdminAnalyticsAction();
+        setData(result as AnalyticsData);
       } catch (err: unknown) {
         addToast({
           message: err instanceof Error ? err.message : t("unknownError"),

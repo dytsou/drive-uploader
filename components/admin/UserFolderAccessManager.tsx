@@ -23,6 +23,13 @@ import { id as localeId } from "date-fns/locale";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTranslations } from "next-intl";
 import { getErrorMessage } from "@/lib/errors";
+import {
+  addUserAccessPermissionAction,
+  getAccessRequestsAction,
+  getUserAccessPermissionsAction,
+  handleAccessRequestAction,
+  removeUserAccessPermissionAction,
+} from "@/app/actions/admin";
 
 interface FolderAccess {
   folderId: string;
@@ -53,13 +60,12 @@ export default function UserFolderAccessManager() {
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const [permRes, reqRes] = await Promise.all([
-        fetch("/api/admin/user-access"),
-        fetch("/api/admin/access-requests"),
+      const [permissions, requests] = await Promise.all([
+        getUserAccessPermissionsAction(),
+        getAccessRequestsAction(),
       ]);
-
-      if (permRes.ok) setPermissions(await permRes.json());
-      if (reqRes.ok) setRequests(await reqRes.json());
+      setPermissions(permissions);
+      setRequests(requests as AccessRequest[]);
     } catch (error: unknown) {
       addToast({
         message: `${t("loadError")}${getErrorMessage(error)}`,
@@ -83,13 +89,7 @@ export default function UserFolderAccessManager() {
     e.preventDefault();
     setIsProcessing("add");
     try {
-      const response = await fetch("/api/admin/user-access", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newAccess),
-      });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error);
+      const result = await addUserAccessPermissionAction(newAccess);
 
       addToast({ message: result.message, type: "success" });
       setNewAccess({ folderId: "", email: "" });
@@ -110,12 +110,7 @@ export default function UserFolderAccessManager() {
     )
       return;
     try {
-      const response = await fetch("/api/admin/user-access", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ folderId, email }),
-      });
-      if (!response.ok) throw new Error(t("deleteError"));
+      await removeUserAccessPermissionAction({ folderId, email });
 
       addToast({ message: t("accessRevoked"), type: "success" });
       fetchData();
@@ -131,12 +126,7 @@ export default function UserFolderAccessManager() {
     const uniqueId = `${request.folderId}-${request.email}`;
     setIsProcessing(uniqueId);
     try {
-      const res = await fetch("/api/admin/access-requests", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action, requestData: request }),
-      });
-      if (!res.ok) throw new Error("Gagal memproses");
+      await handleAccessRequestAction({ action, requestData: request });
 
       addToast({
         message:

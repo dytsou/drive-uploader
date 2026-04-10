@@ -41,7 +41,7 @@ describe("lib/drive/auth", () => {
       const token = await getAccessToken();
       expect(token).toBe("cached-access-token");
       expect(kv.get).toHaveBeenCalledWith(
-        `${REDIS_KEYS.ACCESS_TOKEN}:test-refre`,
+        `${REDIS_KEYS.ACCESS_TOKEN}:oauth:test-refre`,
       );
     });
 
@@ -65,9 +65,9 @@ describe("lib/drive/auth", () => {
       const token = await getAccessToken();
       expect(token).toBe("new-access-token");
       expect(kv.set).toHaveBeenCalledWith(
-        `${REDIS_KEYS.ACCESS_TOKEN}:test-refre`,
+        `${REDIS_KEYS.ACCESS_TOKEN}:oauth:test-refre`,
         "new-access-token",
-        expect.any(Object),
+        expect.objectContaining({ ex: 3500 }),
       );
     });
 

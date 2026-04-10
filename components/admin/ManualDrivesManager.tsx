@@ -20,6 +20,12 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { getErrorMessage } from "@/lib/errors";
+import {
+  createManualDriveAction,
+  deleteManualDriveAction,
+  getManualDrivesAction,
+  scanDrivesAction,
+} from "@/app/actions/admin";
 
 interface ManualDrive {
   id: string;
@@ -80,15 +86,12 @@ export default function ManualDrivesManager() {
 
   const fetchDrives = useCallback(async () => {
     try {
-      const res = await fetch("/api/admin/manual-drives");
-      if (res.ok) {
-        const data: ManualDrive[] = await res.json();
-        const taggedData = data.map((drive) => ({
-          ...drive,
-          source: "db" as const,
-        }));
-        setDbDrives(taggedData);
-      }
+      const data: ManualDrive[] = await getManualDrivesAction();
+      const taggedData = data.map((drive) => ({
+        ...drive,
+        source: "db" as const,
+      }));
+      setDbDrives(taggedData);
     } catch (e) {
       console.error(e);
     } finally {
@@ -136,14 +139,11 @@ export default function ManualDrivesManager() {
 
     setIsSubmitting(true);
     try {
-      const res = await fetch("/api/admin/manual-drives", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, name, password }),
-      });
-
-      const data: ManualDriveResponse = await res.json();
-      if (!res.ok) throw new Error(data.error);
+      const data = (await createManualDriveAction({
+        id,
+        name,
+        password,
+      })) as ManualDriveResponse;
 
       addToast({ message: t("addSuccess"), type: "success" });
       const newDbDrives = data.drives.map((drive) => ({
@@ -168,20 +168,15 @@ export default function ManualDrivesManager() {
     )
       return;
     try {
-      const res = await fetch("/api/admin/manual-drives", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id }),
-      });
-      if (res.ok) {
-        const data: ManualDriveResponse = await res.json();
-        const newDbDrives = data.drives.map((drive) => ({
-          ...drive,
-          source: "db" as const,
-        }));
-        setDbDrives(newDbDrives);
-        addToast({ message: t("deleted"), type: "success" });
-      }
+      const data = (await deleteManualDriveAction({
+        id,
+      })) as ManualDriveResponse;
+      const newDbDrives = data.drives.map((drive) => ({
+        ...drive,
+        source: "db" as const,
+      }));
+      setDbDrives(newDbDrives);
+      addToast({ message: t("deleted"), type: "success" });
     } catch (e) {
       console.error("Delete error:", e);
       addToast({ message: t("deleteFailed"), type: "error" });
@@ -191,18 +186,13 @@ export default function ManualDrivesManager() {
   const handleScanDrives = async () => {
     setIsScanning(true);
     try {
-      const res = await fetch("/api/admin/drives/scan");
-      if (res.ok) {
-        const data: ScannedDrive[] = await res.json();
-        setScannedDrives(data);
-        if (data.length === 0) {
-          addToast({
-            message: t("noDrivesFound"),
-            type: "info",
-          });
-        }
-      } else {
-        throw new Error(t("scanError"));
+      const data: ScannedDrive[] = await scanDrivesAction();
+      setScannedDrives(data);
+      if (data.length === 0) {
+        addToast({
+          message: t("noDrivesFound"),
+          type: "info",
+        });
       }
     } catch (error: unknown) {
       addToast({ message: getErrorMessage(error), type: "error" });

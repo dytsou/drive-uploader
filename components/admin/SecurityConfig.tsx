@@ -9,7 +9,7 @@ export default function SecurityConfig() {
     hideAuthor,
     localStorageAuthEnabled,
     isConfigLoading,
-    fetchConfig,
+    fetchAdminConfig,
     setConfig,
     addToast,
     user,
@@ -18,9 +18,9 @@ export default function SecurityConfig() {
   useEffect(() => {
     if (user?.role !== "ADMIN") return;
     if (hideAuthor === null || localStorageAuthEnabled === null) {
-      fetchConfig();
+      fetchAdminConfig();
     }
-  }, [fetchConfig, hideAuthor, localStorageAuthEnabled, user]);
+  }, [fetchAdminConfig, hideAuthor, localStorageAuthEnabled, user]);
 
   if (user?.role !== "ADMIN") return null;
 

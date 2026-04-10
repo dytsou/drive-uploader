@@ -39,6 +39,7 @@ import ActivityLogDashboard from "@/components/admin/ActivityLogDashboard";
 import AnalyticsDashboard from "@/components/admin/AnalyticsDashboard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { AdminStats } from "@/lib/adminStats";
+import { getAdminStatsAction } from "@/app/actions/admin";
 const TodayDownloadsChart = dynamic(
   () => import("@/components/charts/TodayDownloadsChart"),
   { ssr: false },
@@ -87,6 +88,7 @@ export default function AdminPage() {
     fetchEditorEmails,
     addEditorEmail,
     removeEditorEmail,
+    fetchAdminConfig,
   } = useAppStore();
   const { confirm } = useConfirm();
   const { status, data: session } = useSession();
@@ -110,27 +112,17 @@ export default function AdminPage() {
       fetchFileRequests();
       fetchAdminEmails();
       fetchEditorEmails();
+      fetchAdminConfig();
 
       setIsLoadingStats(true);
-      fetch("/api/admin/stats")
-        .then((res) => {
-          if (res.status === 429) {
-            throw new Error("Rate limit exceeded");
-          }
-          return res.json();
-        })
-        .then((data) => {
-          if (data.error) throw new Error(data.error);
-          setStats(data);
-        })
+      getAdminStatsAction()
+        .then((data) => setStats(data))
         .catch((err) => {
           console.error("Stats fetch error:", err);
-          if (err.message !== "Rate limit exceeded") {
-            addToast({
-              message: t("loadingStatsError", { error: err.message }),
-              type: "error",
-            });
-          }
+          addToast({
+            message: t("loadingStatsError", { error: err.message }),
+            type: "error",
+          });
         })
         .finally(() => setIsLoadingStats(false));
     }
@@ -142,6 +134,7 @@ export default function AdminPage() {
     fetchFileRequests,
     fetchAdminEmails,
     fetchEditorEmails,
+    fetchAdminConfig,
     addToast,
     t,
   ]);

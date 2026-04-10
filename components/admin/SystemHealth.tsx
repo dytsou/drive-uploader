@@ -19,6 +19,7 @@ import type {
 } from "@/lib/services/health-service";
 import { getErrorMessage } from "@/lib/errors";
 import { formatBytes } from "@/lib/utils";
+import { getSystemHealthAction } from "@/app/actions/admin";
 
 interface SystemHealthResponse {
   status: "ok" | "error";
@@ -70,9 +71,7 @@ export default function SystemHealth() {
 
   const fetchHealth = async () => {
     try {
-      const response = await fetch("/api/admin/system-health");
-      if (!response.ok) throw new Error("Failed to fetch system health");
-      setData(await response.json());
+      setData(await getSystemHealthAction());
       setError("");
     } catch (error: unknown) {
       setError(getErrorMessage(error, "Failed to fetch system health"));

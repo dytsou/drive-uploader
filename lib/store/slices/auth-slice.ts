@@ -1,6 +1,14 @@
 import { StateCreator } from "zustand";
 import { getErrorMessage } from "@/lib/errors";
 import { AppState, AuthSlice } from "../types";
+import {
+  addAdminEmailAction,
+  addEditorEmailAction,
+  getAdminEmailsAction,
+  getEditorEmailsAction,
+  removeAdminEmailAction,
+  removeEditorEmailAction,
+} from "@/app/actions/admin";
 
 export const createAuthSlice: StateCreator<AppState, [], [], AuthSlice> = (
   set,
@@ -25,9 +33,7 @@ export const createAuthSlice: StateCreator<AppState, [], [], AuthSlice> = (
   fetchAdminEmails: async () => {
     set({ isFetchingAdmins: true });
     try {
-      const response = await fetch("/api/admin/users");
-      if (!response.ok) throw new Error("Failed to fetch admin list");
-      const emails = await response.json();
+      const emails = await getAdminEmailsAction();
       set({ adminEmails: emails });
     } catch (error: unknown) {
       get().addToast({
@@ -40,15 +46,9 @@ export const createAuthSlice: StateCreator<AppState, [], [], AuthSlice> = (
   },
   addAdminEmail: async (email: string) => {
     try {
-      const response = await fetch("/api/admin/users", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error || "Failed to add admin.");
+      const result = await addAdminEmailAction(email);
       set((state: AppState) => ({
-        adminEmails: [...state.adminEmails, email].sort(),
+        adminEmails: [...state.adminEmails, result.email].sort(),
       }));
       get().addToast({ message: result.message, type: "success" });
     } catch (error: unknown) {
@@ -66,14 +66,7 @@ export const createAuthSlice: StateCreator<AppState, [], [], AuthSlice> = (
       ),
     }));
     try {
-      const response = await fetch("/api/admin/users", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
-      const result = await response.json();
-      if (!response.ok)
-        throw new Error(result.error || "Failed to remove admin.");
+      const result = await removeAdminEmailAction(email);
       get().addToast({ message: result.message, type: "success" });
     } catch (error: unknown) {
       get().addToast({
@@ -88,9 +81,7 @@ export const createAuthSlice: StateCreator<AppState, [], [], AuthSlice> = (
   fetchEditorEmails: async () => {
     set({ isFetchingEditors: true });
     try {
-      const response = await fetch("/api/admin/editors");
-      if (!response.ok) throw new Error("Failed to fetch editor list");
-      const emails = await response.json();
+      const emails = await getEditorEmailsAction();
       set({ editorEmails: emails });
     } catch (error: unknown) {
       get().addToast({
@@ -103,16 +94,9 @@ export const createAuthSlice: StateCreator<AppState, [], [], AuthSlice> = (
   },
   addEditorEmail: async (email: string) => {
     try {
-      const response = await fetch("/api/admin/editors", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
-      const result = await response.json();
-      if (!response.ok)
-        throw new Error(result.error || "Failed to add editor.");
+      const result = await addEditorEmailAction(email);
       set((state: AppState) => ({
-        editorEmails: [...state.editorEmails, email].sort(),
+        editorEmails: [...state.editorEmails, result.email].sort(),
       }));
       get().addToast({ message: result.message, type: "success" });
     } catch (error: unknown) {
@@ -128,14 +112,7 @@ export const createAuthSlice: StateCreator<AppState, [], [], AuthSlice> = (
       editorEmails: state.editorEmails.filter((e: string) => e !== email),
     }));
     try {
-      const response = await fetch("/api/admin/editors", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
-      const result = await response.json();
-      if (!response.ok)
-        throw new Error(result.error || "Failed to remove editor.");
+      const result = await removeEditorEmailAction(email);
       get().addToast({ message: result.message, type: "success" });
     } catch (error: unknown) {
       get().addToast({

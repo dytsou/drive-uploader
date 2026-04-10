@@ -26,6 +26,7 @@ import { id } from "date-fns/locale";
 import type { ActivityLog, ActivityType } from "@/lib/activityLogger";
 import EmptyState from "@/components/file-browser/EmptyState";
 import { useTranslations } from "next-intl";
+import { getActivityLogPageAction } from "@/app/actions/admin";
 
 const iconMap: Record<string, React.ElementType> = {
   UPLOAD: Upload,
@@ -114,11 +115,10 @@ export default function ActivityLogDashboard() {
     async (page: number) => {
       setIsLoading(true);
       try {
-        const response = await fetch(
-          `/api/admin/activity-log?page=${page}&limit=${LOGS_PER_PAGE}`,
-        );
-        if (!response.ok) throw new Error(t("loadingError"));
-        const data = await response.json();
+        const data = await getActivityLogPageAction({
+          page,
+          limit: LOGS_PER_PAGE,
+        });
 
         setLogs(data.logs);
         setTotalPages(data.totalPages);

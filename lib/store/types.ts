@@ -96,6 +96,7 @@ export interface UISlice {
   primaryColor: string;
   isConfigLoading: boolean;
   fetchConfig: () => Promise<void>;
+  fetchAdminConfig: () => Promise<void>;
   fetchPublicConfig: () => Promise<void>;
   setConfig: (config: Partial<AppConfig>) => Promise<void>;
   hideAuthor: boolean | null;

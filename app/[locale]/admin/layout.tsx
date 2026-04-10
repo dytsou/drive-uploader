@@ -58,18 +58,18 @@ export default function MainLayout({
     fetchDataUsage,
     detailsFile,
     setDetailsFile,
-    fetchConfig,
+    fetchPublicConfig,
   } = useAppStore();
   const { status } = useSession();
 
   useEffect(() => {
-    fetchConfig();
+    fetchPublicConfig();
 
     if (status === "authenticated") {
       fetchUser();
       fetchDataUsage();
     }
-  }, [status, fetchUser, fetchDataUsage, fetchConfig, refreshKey]);
+  }, [status, fetchUser, fetchDataUsage, fetchPublicConfig, refreshKey]);
 
   return (
     <>

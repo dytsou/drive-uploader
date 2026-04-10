@@ -19,7 +19,7 @@ export default function BrandingConfig() {
     primaryColor,
     setConfig,
     isConfigLoading,
-    fetchConfig,
+    fetchAdminConfig,
     addToast,
   } = useAppStore();
 
@@ -34,9 +34,9 @@ export default function BrandingConfig() {
   useEffect(() => {
     if (useAppStore.getState().user?.role !== "ADMIN") return;
     if (appName === null || logoUrl === null || primaryColor === null) {
-      fetchConfig();
+      fetchAdminConfig();
     }
-  }, [fetchConfig, appName, logoUrl, primaryColor]);
+  }, [fetchAdminConfig, appName, logoUrl, primaryColor]);
 
   useEffect(() => {
     setFormState({

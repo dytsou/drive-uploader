@@ -9,6 +9,7 @@ import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { ArrowLeft, AlertCircle } from "lucide-react";
 import { ActivityDetails, ActivityType } from "@/lib/activityLogger";
+import { getLiveLogsAction } from "@/app/actions/admin";
 
 interface LogEntry extends ActivityDetails {
   type: ActivityType;
@@ -23,16 +24,14 @@ export default function ActivityLogPage() {
 
   useEffect(() => {
     if (status === "authenticated") {
-      fetch("/api/admin/logs")
-        .then((res) => res.json())
+      getLiveLogsAction({ offset: 0 })
         .then((data) => {
-          setLogs(data);
-          setIsLoading(false);
+          setLogs(((data.logs || []) as unknown as LogEntry[]) || []);
         })
         .catch((err) => {
           console.error(err);
-          setIsLoading(false);
-        });
+        })
+        .finally(() => setIsLoading(false));
     }
   }, [status]);
 

@@ -78,14 +78,14 @@ describe("lib/app-config", () => {
     });
 
     const result = await updateAppConfig({
-      disableGuestLogin: true,
+      localStorageAuthEnabled: true,
     });
 
     expect(result).toEqual({
       ...DEFAULT_APP_CONFIG,
       appName: "Existing Name",
       logoUrl: "https://example.com/logo.png",
-      disableGuestLogin: true,
+      localStorageAuthEnabled: true,
     });
     expect(mockUpsert).toHaveBeenCalledWith({
       where: { key: "zee-index:config" },
@@ -99,7 +99,7 @@ describe("lib/app-config", () => {
     mockKvGet.mockResolvedValueOnce({
       ...DEFAULT_APP_CONFIG,
       hideAuthor: true,
-      disableGuestLogin: true,
+      localStorageAuthEnabled: true,
       appName: "Hidden",
     });
 
@@ -107,8 +107,7 @@ describe("lib/app-config", () => {
 
     expect(result).toEqual({
       hideAuthor: true,
-      disableGuestLogin: true,
-      localStorageAuthEnabled: false,
+      localStorageAuthEnabled: true,
     });
   });
 

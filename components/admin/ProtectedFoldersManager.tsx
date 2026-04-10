@@ -17,6 +17,11 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { getErrorMessage } from "@/lib/errors";
+import {
+  getProtectedFoldersAction,
+  protectFolderAction,
+  unprotectFolderAction,
+} from "@/app/actions/admin";
 
 interface ProtectedFolder {
   id: string;
@@ -35,9 +40,7 @@ export default function ProtectedFoldersManager() {
   const fetchFolders = useCallback(async () => {
     setIsLoading(true);
     try {
-      const response = await fetch("/api/admin/protected-folders");
-      if (!response.ok) throw new Error("Gagal mengambil data folder.");
-      setFolders(await response.json());
+      setFolders(await getProtectedFoldersAction());
     } catch (error: unknown) {
       addToast({ message: getErrorMessage(error), type: "error" });
     } finally {
@@ -58,13 +61,7 @@ export default function ProtectedFoldersManager() {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      const response = await fetch("/api/admin/protected-folders", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...newFolder, id: "admin" }),
-      });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error);
+      const result = await protectFolderAction({ ...newFolder, id: "admin" });
       addToast({ message: result.message, type: "success" });
       setNewFolder({ folderId: "", password: "" });
       fetchFolders();
@@ -78,13 +75,7 @@ export default function ProtectedFoldersManager() {
   const confirmDelete = async () => {
     if (!folderToDelete) return;
     try {
-      const response = await fetch("/api/admin/protected-folders", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ folderId: folderToDelete }),
-      });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error);
+      const result = await unprotectFolderAction(folderToDelete);
       addToast({ message: result.message, type: "success" });
       fetchFolders();
     } catch (error: unknown) {
