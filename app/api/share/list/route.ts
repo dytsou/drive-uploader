@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminRoute } from "@/lib/api-middleware";
-import type { ShareLink as DbShareLink } from "@prisma/client";
+import type { ShareLink as DbShareLink } from "@/generated/prisma/client";
 import { db } from "@/lib/db";
 import type { ShareLink } from "@/lib/store";
 

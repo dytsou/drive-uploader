@@ -1,5 +1,5 @@
 import { type NextRequest } from "next/server";
-import type { ShareLink as DbShareLink } from "@prisma/client";
+import type { ShareLink as DbShareLink } from "@/generated/prisma/client";
 import type { Session } from "next-auth";
 import { jwtVerify } from "jose";
 import { kv } from "@/lib/kv";

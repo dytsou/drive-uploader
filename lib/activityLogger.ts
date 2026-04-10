@@ -1,5 +1,5 @@
 import { headers } from "next/headers";
-import type { ActivityLog as DbActivityLog } from "@prisma/client";
+import type { ActivityLog as DbActivityLog } from "@/generated/prisma/client";
 import { z } from "zod";
 import { logger } from "@/lib/logger";
 import { db } from "@/lib/db";
