@@ -48,7 +48,6 @@ export function AdminDashboard(props: AdminDashboardProps) {
     fetchUser,
     fetchShareLinks,
     adminEmails,
-    editorEmails,
   } = useAppStore();
   const { confirm } = useConfirm();
   const router = useRouter();
