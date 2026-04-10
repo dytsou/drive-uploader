@@ -16,6 +16,23 @@ const uploadInitBodySchema = z.object({
   size: z.number().nonnegative(),
 });
 
+const GOOGLE_UPLOAD_HOST = "www.googleapis.com";
+const GOOGLE_UPLOAD_PATH_PREFIX = "/upload/drive/v3/files";
+
+function isAllowedResumableUploadUrl(uploadUrl: string): boolean {
+  try {
+    const parsed = new URL(uploadUrl);
+    return (
+      parsed.protocol === "https:" &&
+      parsed.hostname === GOOGLE_UPLOAD_HOST &&
+      parsed.pathname.startsWith(GOOGLE_UPLOAD_PATH_PREFIX) &&
+      parsed.searchParams.has("upload_id")
+    );
+  } catch {
+    return false;
+  }
+}
+
 const uploadQuerySchema = z
   .object({
     type: z.enum(["init", "chunk"]),
@@ -131,20 +148,16 @@ export const POST = createEditorRoute(
         const contentLength = request.headers.get("Content-Length");
 
         const chunkBuffer = await request.arrayBuffer();
-        const isGoogleUpload = uploadUrl.startsWith(
-          "https://www.googleapis.com/",
-        );
-        const isEmptyGoogleUpload =
-          isGoogleUpload && chunkBuffer.byteLength === 0;
+        const isEmptyChunk = chunkBuffer.byteLength === 0;
 
-        if (!isGoogleUpload) {
+        if (!isAllowedResumableUploadUrl(uploadUrl)) {
           return NextResponse.json(
             { error: "Parameter uploadUrl tidak valid atau header kurang." },
             { status: 400 },
           );
         }
 
-        if (!isEmptyGoogleUpload && !contentRange) {
+        if (!isEmptyChunk && !contentRange) {
           return NextResponse.json(
             { error: "Parameter uploadUrl tidak valid atau header kurang." },
             { status: 400 },

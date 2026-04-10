@@ -138,7 +138,9 @@ export async function validateDownloadRequest(request: NextRequest): Promise<{
     };
   }
 
-  const fileIdPattern = /^[a-zA-Z0-9_:/.\s\(\)\[\]~@#$%-]+$/;
+  // Google Drive file IDs are URL path segments; disallow characters that can
+  // change the path structure or introduce ambiguity.
+  const fileIdPattern = /^[a-zA-Z0-9_-]+$/;
   if (!fileIdPattern.test(fileId) || fileId.length > 255) {
     return {
       context: createEmptyDownloadContext(),
@@ -225,7 +227,8 @@ export function prepareGoogleDriveUrl(
   fileId: string,
   fileDetails: Pick<DriveFile, "mimeType" | "name">,
 ): { url: string; mimeType: string; filename: string } {
-  let downloadUrl = `${GOOGLE_DRIVE_API_BASE_URL}/files/${fileId}?alt=media&supportsAllDrives=true`;
+  const safeFileId = encodeURIComponent(fileId);
+  let downloadUrl = `${GOOGLE_DRIVE_API_BASE_URL}/files/${safeFileId}?alt=media&supportsAllDrives=true`;
   let responseMimeType = fileDetails.mimeType;
   let responseFileName = fileDetails.name;
 
@@ -240,7 +243,7 @@ export function prepareGoogleDriveUrl(
       mime: "application/pdf",
       ext: ".pdf",
     };
-    downloadUrl = `${GOOGLE_DRIVE_API_BASE_URL}/files/${fileId}/export?mimeType=${encodeURIComponent(exportInfo.mime)}&supportsAllDrives=true`;
+    downloadUrl = `${GOOGLE_DRIVE_API_BASE_URL}/files/${safeFileId}/export?mimeType=${encodeURIComponent(exportInfo.mime)}&supportsAllDrives=true`;
     responseMimeType = exportInfo.mime;
     if (!responseFileName.endsWith(exportInfo.ext)) {
       responseFileName += exportInfo.ext;
