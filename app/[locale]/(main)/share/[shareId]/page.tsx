@@ -27,7 +27,7 @@ function SharedCollectionPage() {
   const createSlug = (name: string) =>
     encodeURIComponent(name.replace(/\s+/g, "-").toLowerCase());
 
-  const isAdmin = user?.role === "ADMIN" && !user?.isGuest;
+  const isAdmin = user?.role === "ADMIN";
   const handleItemClick = useCallback(
     (file: DriveFile) => {
       let destinationUrl = "";

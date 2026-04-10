@@ -70,8 +70,7 @@ export function useSidebarController() {
   const [isMobile, setIsMobile] = useState(false);
   const touchStartRef = useRef<number | null>(null);
 
-  const canEdit =
-    (user?.role === "ADMIN" || user?.role === "EDITOR") && !user?.isGuest;
+  const canEdit = user?.role === "ADMIN" || user?.role === "EDITOR";
   const rootFolderId = process.env.NEXT_PUBLIC_ROOT_FOLDER_ID!;
   const rootFolderName = process.env.NEXT_PUBLIC_ROOT_FOLDER_NAME || t("home");
 

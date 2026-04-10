@@ -2,12 +2,11 @@
 
 import React, { useEffect } from "react";
 import { useAppStore } from "@/lib/store";
-import { Loader2, EyeOff, UserX } from "lucide-react";
+import { Loader2, EyeOff } from "lucide-react";
 
 export default function SecurityConfig() {
   const {
     hideAuthor,
-    disableGuestLogin,
     localStorageAuthEnabled,
     isConfigLoading,
     fetchConfig,
@@ -18,25 +17,15 @@ export default function SecurityConfig() {
 
   useEffect(() => {
     if (user?.role !== "ADMIN") return;
-    if (
-      hideAuthor === null ||
-      disableGuestLogin === null ||
-      localStorageAuthEnabled === null
-    ) {
+    if (hideAuthor === null || localStorageAuthEnabled === null) {
       fetchConfig();
     }
-  }, [
-    fetchConfig,
-    hideAuthor,
-    disableGuestLogin,
-    localStorageAuthEnabled,
-    user,
-  ]);
+  }, [fetchConfig, hideAuthor, localStorageAuthEnabled, user]);
 
   if (user?.role !== "ADMIN") return null;
 
   const handleToggle = async (
-    key: "hideAuthor" | "disableGuestLogin" | "localStorageAuthEnabled",
+    key: "hideAuthor" | "localStorageAuthEnabled",
     value: boolean,
   ) => {
     try {
@@ -82,36 +71,6 @@ export default function SecurityConfig() {
               checked={hideAuthor || false}
               disabled={isConfigLoading}
               onChange={(e) => handleToggle("hideAuthor", e.target.checked)}
-              className="ml-auto h-5 w-5 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer disabled:opacity-50"
-            />
-          )}
-        </div>
-
-        <div className="flex items-center justify-between pt-4 first:pt-0">
-          <label
-            htmlFor="disableGuestLogin"
-            className="flex items-center gap-3 cursor-pointer"
-          >
-            <UserX className="h-8 w-8 text-muted-foreground" />
-            <div>
-              <p className="font-semibold">Nonaktifkan Login Tamu</p>
-              <p className="text-sm text-muted-foreground">
-                Mencegah pengguna baru masuk sebagai &quot;Tamu&quot; di halaman
-                login.
-              </p>
-            </div>
-          </label>
-          {isConfigLoading ? (
-            <Loader2 className="animate-spin text-muted-foreground" />
-          ) : (
-            <input
-              id="disableGuestLogin"
-              type="checkbox"
-              checked={disableGuestLogin || false}
-              disabled={isConfigLoading}
-              onChange={(e) =>
-                handleToggle("disableGuestLogin", e.target.checked)
-              }
               className="ml-auto h-5 w-5 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer disabled:opacity-50"
             />
           )}

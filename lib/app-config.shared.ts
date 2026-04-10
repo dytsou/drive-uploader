@@ -33,8 +33,8 @@ export const appConfigSchema = z.object({
 export const appConfigUpdateSchema = appConfigSchema.partial();
 
 export const publicAppConfigSchema = appConfigSchema.pick({
-  disableGuestLogin: true,
   hideAuthor: true,
+  disableGuestLogin: true,
   localStorageAuthEnabled: true,
 });
 

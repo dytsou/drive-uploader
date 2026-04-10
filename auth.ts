@@ -7,7 +7,6 @@ import { logger } from "@/lib/logger";
 import { authLimiter } from "@/lib/ratelimit";
 import { kv } from "@/lib/kv";
 import { REDIS_KEYS } from "@/lib/constants";
-import { getPublicAppConfig } from "@/lib/app-config";
 import bcrypt from "bcryptjs";
 import type { ActivityDetails } from "@/lib/activityLogger";
 
@@ -28,10 +27,6 @@ function constantTimeEqual(a: string, b: string): boolean {
   }
 
   return result === 0;
-}
-
-function generateGuestId(): string {
-  return `guest_${Date.now()}_${crypto.randomUUID().replace(/-/g, "").substring(0, 12)}`;
 }
 
 function normalizeAdminEmails(): string[] {
@@ -90,6 +85,25 @@ const authConfig: NextAuthConfig = {
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID as string,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
+    }),
+    Credentials({
+      id: "guest",
+      name: "Guest",
+      credentials: {},
+      async authorize() {
+        const { getAppConfig } = await import("@/lib/app-config");
+        const config = await getAppConfig();
+        if (config.disableGuestLogin) {
+          return null;
+        }
+
+        return {
+          id: "guest",
+          name: "Guest",
+          email: undefined,
+          role: "GUEST",
+        };
+      },
     }),
     Credentials({
       id: "credentials",
@@ -220,7 +234,6 @@ const authConfig: NextAuthConfig = {
               name: currentUser.name || normalizedInputEmail.split("@")[0],
               email: normalizedInputEmail,
               role: "ADMIN",
-              isGuest: false,
             };
           }
 
@@ -252,50 +265,31 @@ const authConfig: NextAuthConfig = {
         }
       },
     }),
-    Credentials({
-      id: "guest",
-      name: "Guest",
-      credentials: {},
-      async authorize() {
-        try {
-          const config = await getPublicAppConfig();
-          if (config.disableGuestLogin) {
-            return null;
-          }
-        } catch {}
-
-        const guestId = generateGuestId();
-        return {
-          id: guestId,
-          name: "Guest User",
-          email: `${guestId}@guest.local`,
-          role: "GUEST",
-          isGuest: true,
-        };
-      },
-    }),
   ],
   pages: {
     signIn: "/login",
     error: "/login",
   },
   callbacks: {
-    async jwt({ token, profile, user }) {
+    async jwt({ token, profile, user, account }) {
       logger.debug(
         { hasUser: !!user, hasProfile: !!profile, email: token.email },
         "[Auth] JWT Callback Start",
       );
-      if (user && (user as any).isGuest) {
-        token.id = `guest_${Date.now()}`;
-        token.name = user.name;
-        token.email = user.email;
-        token.role = (user as any).role;
+      if (account?.provider === "guest") {
+        token.id = "guest";
+        token.name = "Guest";
+        token.email = null;
+        token.role = "GUEST";
         token.isGuest = true;
-      } else if (user && user.email) {
+        token.twoFactorRequired = false;
+        return token;
+      }
+
+      if (user && user.email) {
         token.id = user.id;
         token.name = user.name;
         token.email = user.email;
-        token.isGuest = false;
 
         try {
           const targetRole = await resolveRole(user.email);
@@ -357,16 +351,18 @@ const authConfig: NextAuthConfig = {
 
         token.twoFactorRequired = false;
       }
+      if (typeof token.role === "string") {
+        token.isGuest = token.role === "GUEST";
+      }
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
-        session.user.role = (token.role as any) || "USER";
+        const role = (token.role as any) || "USER";
+        session.user.role = role;
         session.user.email = token.email as string;
-        session.user.isGuest = !!token.isGuest;
-        if (token.isGuest) {
-          session.user.name = "Guest User";
-        }
+        session.user.isGuest =
+          token.isGuest ?? (role ? role === "GUEST" : false);
       }
       return session;
     },

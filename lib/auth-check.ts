@@ -31,7 +31,7 @@ export async function checkAuth(
 
   return {
     isAuthenticated: true,
-    isGuest: !!token.isGuest,
+    isGuest: token.role === "GUEST",
     is2FARequired: !!token.twoFactorRequired,
     token,
   };

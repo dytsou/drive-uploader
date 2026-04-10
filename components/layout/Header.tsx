@@ -262,31 +262,17 @@ export default function Header() {
     }
   }, [isMobileMenuOpen]);
 
-  const handleGuestLogout = () => {
-    signOut({ callbackUrl: "/login?error=GuestLogout" });
-  };
-
   const authButton =
     status === "loading" ? (
       <div className="w-24 h-9 bg-muted rounded-lg animate-pulse" />
     ) : session?.user ? (
-      session.user.isGuest ? (
-        <button
-          onClick={handleGuestLogout}
-          title={t("logoutGuest")}
-          className="p-2 rounded-lg hover:bg-accent text-muted-foreground"
-        >
-          <LogOut size={20} />
-        </button>
-      ) : (
-        <button
-          onClick={() => signOut({ callbackUrl: "/login" })}
-          title={t("logout")}
-          className="p-2 rounded-lg hover:bg-accent"
-        >
-          <LogOut size={20} />
-        </button>
-      )
+      <button
+        onClick={() => signOut({ callbackUrl: "/login" })}
+        title={t("logout")}
+        className="p-2 rounded-lg hover:bg-accent"
+      >
+        <LogOut size={20} />
+      </button>
     ) : (
       <button
         onClick={handleLoginClick}

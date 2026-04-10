@@ -98,7 +98,7 @@ function CustomLoginPage() {
           throw new Error("Failed to fetch config");
         }
 
-        const data = await response.json();
+        const data = (await response.json()) as { disableGuestLogin?: boolean };
         setIsGuestLoginDisabled(data.disableGuestLogin === true);
       } catch (err) {
         console.error("Config fetch error:", err);
@@ -107,7 +107,7 @@ function CustomLoginPage() {
         setIsLoadingConfig(false);
       }
     };
-    fetchPublicConfig();
+    void fetchPublicConfig();
   }, []);
 
   const handleGoogleSignIn = () => {

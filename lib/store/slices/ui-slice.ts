@@ -86,7 +86,6 @@ export const createUISlice: StateCreator<AppState, [], [], UISlice> = (
   primaryColor: DEFAULT_APP_CONFIG.primaryColor,
   isConfigLoading: false,
   hideAuthor: null,
-  disableGuestLogin: null,
   localStorageAuthEnabled: null,
   localStoragePassword: null,
   fetchConfig: async () => {
@@ -98,7 +97,6 @@ export const createUISlice: StateCreator<AppState, [], [], UISlice> = (
       const config: AppConfig = await response.json();
       set({
         hideAuthor: config.hideAuthor,
-        disableGuestLogin: config.disableGuestLogin,
         appName: config.appName,
         logoUrl: config.logoUrl,
         faviconUrl: config.faviconUrl,
@@ -146,7 +144,6 @@ export const createUISlice: StateCreator<AppState, [], [], UISlice> = (
 
       set({
         hideAuthor: updatedConfig.hideAuthor,
-        disableGuestLogin: updatedConfig.disableGuestLogin,
         appName: updatedConfig.appName,
         logoUrl: updatedConfig.logoUrl,
         faviconUrl: updatedConfig.faviconUrl,

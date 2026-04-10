@@ -14,7 +14,7 @@ import {
 export const POST = createUserRoute(
   async ({ body, session }) => {
     try {
-      if (!session.user || session.user.isGuest) {
+      if (!session.user || session.user.role === "GUEST") {
         return NextResponse.json(
           { error: "Fitur ini hanya untuk pengguna terdaftar." },
           { status: 403 },

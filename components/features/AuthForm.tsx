@@ -41,7 +41,7 @@ export default function AuthForm({
   };
 
   const handleRequestAccess = async () => {
-    if (!user || user.isGuest) return;
+    if (!user || user.role === "GUEST") return;
 
     setIsRequesting(true);
     try {
@@ -105,7 +105,7 @@ export default function AuthForm({
     return () => clearInterval(interval);
   }, [requestSent, folderId, addToast, t]);
 
-  const isLoggedIn = user && !user.isGuest;
+  const isLoggedIn = user && user.role !== "GUEST";
 
   return (
     <div className="w-full max-w-5xl flex flex-col md:flex-row items-center justify-center gap-12 md:gap-24 p-6">

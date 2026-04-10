@@ -99,7 +99,6 @@ export interface UISlice {
   fetchPublicConfig: () => Promise<void>;
   setConfig: (config: Partial<AppConfig>) => Promise<void>;
   hideAuthor: boolean | null;
-  disableGuestLogin: boolean | null;
   localStorageAuthEnabled: boolean | null;
   localStoragePassword: string | null;
   isTheaterMode: boolean;

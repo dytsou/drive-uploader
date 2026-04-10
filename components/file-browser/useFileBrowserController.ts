@@ -121,10 +121,10 @@ export function useFileBrowserController({
     setCurrentFileId(null);
   }, [pathname, setNavigatingId, setCurrentFileId]);
 
-  const isGuest = user?.isGuest === true;
-  const isAdmin = user?.role === "ADMIN" && !isGuest;
-  const isEditor = user?.role === "EDITOR" && !isGuest;
-  const canEdit = (isAdmin || isEditor) && !isGuest;
+  const isGuestUser = user?.role === "GUEST";
+  const isAdmin = user?.role === "ADMIN" && !isGuestUser;
+  const isEditor = user?.role === "EDITOR" && !isGuestUser;
+  const canEdit = (isAdmin || isEditor) && !isGuestUser;
 
   const upload = useUpload({
     currentFolderId,

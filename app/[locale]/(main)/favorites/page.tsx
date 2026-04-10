@@ -30,7 +30,7 @@ export default function FavoritesPage() {
     queryFn: async () => {
       return await getFavorites();
     },
-    enabled: !!user && !user.isGuest,
+    enabled: !!user && user.role !== "GUEST",
     initialData: [],
   });
 
@@ -64,7 +64,7 @@ export default function FavoritesPage() {
     },
     [router, addToast, t],
   );
-  if (user?.isGuest) {
+  if (user?.role === "GUEST") {
     return (
       <motion.div
         initial={{ opacity: 0, y: 10 }}
