@@ -96,7 +96,7 @@ function emitAuthActivity<T extends AuthAuditType>(
 }
 
 const authConfig: NextAuthConfig = {
-  adapter: PrismaAdapter(db),
+  adapter: PrismaAdapter(db as any),
   providers: [
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID as string,
