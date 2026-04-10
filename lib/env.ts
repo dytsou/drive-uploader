@@ -18,9 +18,7 @@ const envSchema = z.object({
     .min(32, "SHARE_SECRET_KEY must be at least 32 characters"),
 
   ADMIN_EMAILS: z.string().min(1, "ADMIN_EMAILS is required"),
-  ADMIN_PASSWORD: z
-    .string()
-    .min(8, "ADMIN_PASSWORD must be at least 8 characters"),
+  ADMIN_PASSWORD: z.string().optional().or(z.literal("")),
   ADMIN_PASSWORD_HASH: z.string().optional().or(z.literal("")),
 
   DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
@@ -60,12 +58,22 @@ export function validateOnStartup(): Env {
 
   const result = envSchema.safeParse(process.env);
 
-  if (!result.success) {
+  const adminCredentialResult = result.success
+    ? validateAdminCredentials(result.data)
+    : { ok: true as const };
+
+  if (!result.success || !adminCredentialResult.ok) {
     console.error(
       "\n❌ PROYEK GAGAL MENYALA: Environment Variable Tidak Valid",
     );
     console.error("=========================================================");
-    result.error.issues.forEach((issue) => {
+    const issues = !result.success
+      ? result.error.issues
+      : adminCredentialResult.ok
+        ? []
+        : [adminCredentialResult.issue];
+
+    issues.forEach((issue) => {
       console.error(`🚩 [${issue.path.join(".")}] -> ${issue.message}`);
     });
     console.error("=========================================================");
@@ -106,6 +114,48 @@ export function validateOnStartup(): Env {
   return result.data;
 }
 
+function stripEnvQuotes(value: string | undefined): string {
+  return (value ?? "").trim().replace(/^["']|["']$/g, "");
+}
+
+/** Match auth.ts: hash in production, or plaintext password (min 8) when no hash. */
+function validateAdminCredentials(data: z.infer<typeof envSchema>):
+  | { ok: true }
+  | {
+      ok: false;
+      issue: { path: (string | number)[]; message: string };
+    } {
+  const pass = stripEnvQuotes(data.ADMIN_PASSWORD);
+  const hash = (data.ADMIN_PASSWORD_HASH ?? "").trim();
+
+  if (hash.length > 0) {
+    return { ok: true };
+  }
+
+  if (pass.length === 0) {
+    return {
+      ok: false,
+      issue: {
+        path: ["ADMIN_PASSWORD"],
+        message:
+          "Set ADMIN_PASSWORD (min 8 characters) or ADMIN_PASSWORD_HASH for admin login.",
+      },
+    };
+  }
+
+  if (pass.length < 8) {
+    return {
+      ok: false,
+      issue: {
+        path: ["ADMIN_PASSWORD"],
+        message: "ADMIN_PASSWORD must be at least 8 characters",
+      },
+    };
+  }
+
+  return { ok: true };
+}
+
 export const env = validateOnStartup();
 
 export const config = {
@@ -122,7 +172,7 @@ export const config = {
   nextAuthUrl: env.NEXTAUTH_URL,
   shareSecretKey: env.SHARE_SECRET_KEY,
   adminEmails: (env.ADMIN_EMAILS || "").split(",").filter(Boolean),
-  adminPassword: env.ADMIN_PASSWORD,
+  adminPassword: env.ADMIN_PASSWORD ?? "",
   adminPasswordHash: env.ADMIN_PASSWORD_HASH,
 
   redisUrl: env.REDIS_URL,
