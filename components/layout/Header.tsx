@@ -10,7 +10,6 @@ import {
   Sun,
   Moon,
   RefreshCw,
-  Send,
   Search as SearchIcon,
   Menu,
   LogIn,
@@ -227,14 +226,6 @@ export default function Header() {
       label: t("github"),
     },
     {
-      id: "telegram",
-      href: "https://t.me/RyzeeenUniverse",
-      target: "_blank",
-      rel: "noopener noreferrer",
-      icon: Send,
-      label: t("joinGroup"),
-    },
-    {
       id: "tour",
       onClick: () => window.dispatchEvent(new Event("start-tour")),
       icon: HelpCircle,
@@ -242,7 +233,7 @@ export default function Header() {
     },
   ];
 
-  const publicShareLinkItems = ["theme", "refresh", "github", "telegram"];
+  const publicShareLinkItems = ["theme", "refresh", "github"];
 
   const handleLogoClick = () => {
     if (!shareToken) {
