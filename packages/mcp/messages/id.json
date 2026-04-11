@@ -1,0 +1,47 @@
+{
+  "missingSession": "Perlu login: atur ZEE_INDEX_SESSION_COOKIE (string cookie lengkap, mis. authjs.session-token=…) atau ZEE_INDEX_SESSION_TOKEN (hanya nilai session). Setelah masuk ke Zee Index di browser, salin cookie dari alat pengembang.",
+  "searchNeedOneCriterion": "Minimal salah satu dari q, mimeType, modifiedTime, atau minSize wajib diisi.",
+  "tools": {
+    "zee_health": {
+      "title": "Kesehatan Zee Index",
+      "description": "Memanggil GET /api/health (publik). Tanpa session. Atur ZEE_INDEX_BASE_URL (default http://127.0.0.1:3000)."
+    },
+    "zee_public_config": {
+      "title": "Konfigurasi publik Zee Index",
+      "description": "Memanggil GET /api/config/public (publik). Tanpa session. Mengembalikan pengaturan aplikasi yang dipublikasikan (tanpa rahasia)."
+    },
+    "zee_metadata_lookup": {
+      "title": "Metadata TMDB dari nama berkas",
+      "description": "Memanggil GET /api/metadata?filename=… (publik). Menyaring judul media dari nama berkas dan mengquery TMDB. Tanpa session."
+    },
+    "zee_whoami": {
+      "title": "Pengguna Zee Index saat ini",
+      "description": "Memanggil GET /api/auth/me. Memerlukan session (ZEE_INDEX_SESSION_COOKIE atau ZEE_INDEX_SESSION_TOKEN). Mengembalikan pengguna dan peran saat ini, sama seperti aplikasi web."
+    },
+    "zee_files_list": {
+      "title": "Daftar berkas di folder",
+      "description": "Memanggil GET /api/files. Memerlukan session. Mengembalikan daftar berkas sesuai izin pengguna dan aturan folder (sama seperti web)."
+    },
+    "zee_search": {
+      "title": "Cari berkas (lingkup folder)",
+      "description": "Memanggil GET /api/search. Memerlukan session. Pencarian dalam satu folder atau dengan filter (parameter sama dengan API web)."
+    },
+    "zee_search_global": {
+      "title": "Cari berkas (pohon global)",
+      "description": "Memanggil GET /api/search/global. Memerlukan session. Pencarian global di bawah pohon root (harus sudah login)."
+    }
+  },
+  "schema": {
+    "filename": "Nama berkas atau segmen path terakhir, mis. Movie.2024.mkv",
+    "folderId": "ID folder Google Drive; kosongkan untuk memakai root yang dikonfigurasi server",
+    "pageToken": "Token pagination",
+    "refresh": "Paksa lewati cache (setara ?refresh=true)",
+    "q": "Kata kunci (nama atau teks penuh, tergantung searchType)",
+    "folderIdSearch": "Hanya cari di folder ini",
+    "searchType": "name atau fullText; default name",
+    "mimeType": "image | video | audio | pdf | folder",
+    "modifiedTime": "today | week | month",
+    "minSize": "Ukuran berkas minimum (MB, string angka)",
+    "qGlobal": "Kata kunci pencarian"
+  }
+}

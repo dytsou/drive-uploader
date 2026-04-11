@@ -11,7 +11,13 @@ export default defineConfig({
     alias: {
       "@": path.resolve(__dirname, "./"),
     },
-    exclude: ["node_modules", ".next/**", "e2e/**"],
+    exclude: [
+      "node_modules",
+      ".next/**",
+      "e2e/**",
+      "packages/mcp/node_modules/**",
+      "packages/sdk/node_modules/**",
+    ],
     coverage: {
       provider: "v8",
       reporter: ["text", "text-summary", "json", "html"],

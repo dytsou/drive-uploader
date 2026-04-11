@@ -26,6 +26,8 @@
     "compile:openapi": "tsp compile docs/api/spec/entry.tsp --config docs/api/spec/tspconfig.yaml",
     "build:sdk": "pnpm compile:openapi && orval --config ./orval.config.js",
     "compile:sdk": "pnpm --filter @zee-index/sdk build",
+    "mcp:build": "pnpm --filter @zee-index/mcp build",
+    "mcp:dev": "pnpm --filter @zee-index/mcp dev",
     "build:redocly": "pnpm compile:openapi && redocly build-docs ./docs/api/openapi.yaml -o ./docs/api/website/index.html",
     "api:compile": "tsp compile docs/api/spec/entry.tsp --config docs/api/spec/tspconfig.yaml",
     "api:docs:redoc": "pnpm api:compile && redocly preview-docs ./docs/api/openapi.yaml",
